@@ -1,0 +1,28 @@
+{
+    "name": "turso/libsql",
+    "version": "0.1.0",
+    "description": "libSQL bindings for PHP",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Levy A.",
+            "email": "levyddsa@gmail.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [ "src/" ],
+        "psr-4": {
+          "Turso\\Libsql\\": "src/",
+          "Turso\\Libsql\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "ext-ffi": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11"
+    },
+    "scripts": {
+        "test": [ "@php vendor/bin/phpunit" ]
+    }
+}
