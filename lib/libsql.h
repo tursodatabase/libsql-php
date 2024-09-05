@@ -57,10 +57,6 @@ typedef struct {
   int len;
 } blob;
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 int libsql_sync(libsql_database_t db, const char **out_err_msg);
 
 int libsql_sync2(libsql_database_t db, replicated *out_replicated, const char **out_err_msg);
@@ -162,9 +158,5 @@ int libsql_get_float(libsql_row_t res, int col, double *out_value, const char **
 int libsql_get_blob(libsql_row_t res, int col, blob *out_blob, const char **out_err_msg);
 
 void libsql_free_blob(blob b);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
 
 #endif /* LIBSQL_EXPERIMENTAL_H */

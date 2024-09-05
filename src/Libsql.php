@@ -318,7 +318,7 @@ class Libsql
             file_get_contents(__DIR__ . '/../lib/libsql.h'),
             __DIR__ . match ([$os, $arch]) {
                 ["Darwin", "arm64"] => '/../lib/aarch64-apple-darwin/liblibsql.dylib',
-                ["Linuz", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
+                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
                 default => die('Unsupported OS ' . $os . ' ' . $arch),
             },
         );
