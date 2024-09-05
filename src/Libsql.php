@@ -128,6 +128,27 @@ class Row
     {
     }
 
+    public function get(int $idx): string|int|float|null
+    {
+        $type = $this->ffi->new('int32_t');
+        $err = $this->ffi->new('const char *');
+
+        if ($this->ffi->libsql_column_type($this->inner, $idx, ffi::addr($type), ffi::addr($err)) != 0) {
+            $err_copy = ffi::string($err);
+            $this->ffi->libsql_free_string($err);
+
+            throw new Exception($err_copy);
+        }
+
+        return match ($type->cdata) {
+            1 /* LIBSQL_INT   */ => $this->getInt($idx),
+            2 /* LIBSQL_FLOAT */ => $this->getFloat($idx),
+            3 /* LIBSQL_TEXT  */ => $this->getString($idx),
+            4 /* LIBSQL_BLOB  */ => $this->getBlob($idx),
+            5 /* LIBSQL_NULL  */ => null,
+        };
+    }
+
     public function getInt(int $idx): int
     {
         $integer = $this->ffi->new('int64_t');
@@ -137,7 +158,7 @@ class Row
             $err_copy = ffi::string($err);
             $this->ffi->libsql_free_string($err);
 
-            throw new exception($err_copy);
+            throw new Exception($err_copy);
         }
 
         return $integer->cdata;

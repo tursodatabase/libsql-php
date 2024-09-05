@@ -32,9 +32,9 @@ final class Test extends TestCase
 
         $i = 0;
         foreach ($rows->iterator() as $row) {
-            $this->assertSame($row->getInt(0), $i);
-            $this->assertSame($row->getFloat(1), exp($i));
-            $this->assertSame($row->getString(2), strval($i));
+            $this->assertSame($row->get(0), $i);
+            $this->assertSame($row->get(1), exp($i));
+            $this->assertSame($row->get(2), strval($i));
             $i++;
         }
     }
