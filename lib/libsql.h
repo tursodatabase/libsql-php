@@ -57,6 +57,10 @@ typedef struct {
   int len;
 } blob;
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 int libsql_sync(libsql_database_t db, const char **out_err_msg);
 
 int libsql_sync2(libsql_database_t db, replicated *out_replicated, const char **out_err_msg);
@@ -137,7 +141,7 @@ int libsql_column_count(libsql_rows_t res);
 
 int libsql_column_name(libsql_rows_t res, int col, const char **out_name, const char **out_err_msg);
 
-int libsql_column_type(libsql_rows_t res, libsql_row_t row, int col, int *out_type, const char **out_err_msg);
+int libsql_column_type(libsql_row_t row, int col, int *out_type, const char **out_err_msg);
 
 uint64_t libsql_changes(libsql_connection_t conn);
 
@@ -159,4 +163,8 @@ int libsql_get_blob(libsql_row_t res, int col, blob *out_blob, const char **out_
 
 void libsql_free_blob(blob b);
 
-#endif  /* LIBSQL_EXPERIMENTAL_H */
+#ifdef __cplusplus
+} // extern "C"
+#endif // __cplusplus
+
+#endif /* LIBSQL_EXPERIMENTAL_H */
