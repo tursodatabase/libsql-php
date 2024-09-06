@@ -128,6 +128,11 @@ class Row
     {
     }
 
+    function __destruct()
+    {
+        $this->ffi->libsql_free_row($this->inner);
+    }
+
     public function get(int $idx): string|int|float|null
     {
         $type = $this->ffi->new('int32_t');
@@ -222,6 +227,11 @@ class Rows
     {
     }
 
+    function __destruct()
+    {
+        $this->ffi->libsql_free_rows($this->inner);
+    }
+
     public function iterator(): iterable
     {
         while (true) {
@@ -259,6 +269,11 @@ class Connection
 {
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
+    }
+
+    function __destruct()
+    {
+        $this->ffi->libsql_disconnect($this->inner);
     }
 
     public function prepare(string $sql): Statement
@@ -310,6 +325,11 @@ class Database
     {
     }
 
+    function __destruct()
+    {
+        $this->ffi->libsql_close($this->inner);
+    }
+
     public function connect()
     {
         $conn = $this->ffi->new('libsql_connection_t');
@@ -338,9 +358,10 @@ class Libsql
         $this->ffi = FFI::cdef(
             file_get_contents(__DIR__ . '/../lib/libsql.h'),
             __DIR__ . match ([$os, $arch]) {
-                ["Darwin", "arm64"] => '/../lib/aarch64-apple-darwin/liblibsql.dylib',
-                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
-                default => die('Unsupported OS ' . $os . ' ' . $arch),
+                ["Darwin", "arm64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
+                ["Darwin", "x86_64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
+                ["Linuz", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
+                default => die("Unsupported OS $os $arch"),
             },
         );
     }

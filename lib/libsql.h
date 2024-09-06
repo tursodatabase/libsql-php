@@ -133,7 +133,7 @@ void libsql_free_rows_future(libsql_rows_future_t res);
 
 void libsql_wait_result(libsql_rows_future_t res);
 
-int libsql_column_count(libsql_rows_t res);
+uintptr_t libsql_column_count(libsql_row_t res);
 
 int libsql_column_name(libsql_rows_t res, int col, const char **out_name, const char **out_err_msg);
 
