@@ -7,118 +7,119 @@ if (!extension_loaded('ffi')) {
 }
 
 use FFI;
-use \Exception as Exception;
+use Exception as Exception;
 
-function stringToUnmanagedPointer(string $str): FFI\CData
+function errIf(?FFI\CData $err, FFI $ffi)
 {
-    $cStr = FFI::new(FFI::arrayType(FFI::type("char"), [strlen($str) + 1]), owned: false);
-    FFI::memcpy($cStr, $str, strlen($str));
-    return $cStr;
+    if ($db->err != null) {
+        $message = FFI::string($ffi->libsql_error_message($db->err));
+        $ffi->libsql_error_deinit($db->err);
+        throw new Exception($message);
+    }
+}
+
+function sliceIntoString(FFI\CData $value, FFI $ffi): string
+{
+    switch ($value->type) {
+        case $ffi->LIBSQL_TYPE_TEXT:
+            $text = FFI::string($value->value->text->ptr, $value->value->text->len - 1);
+            $ffi->libsql_slice_deinit($value->value->text);
+            return $text;
+        case $ffi->LIBSQL_TYPE_BLOB:
+            $blob = FFI::string($value->value->blob->ptr, $value->value->blob->len);
+            $ffi->libsql_slice_deinit($value->value->blob);
+            return $blob;
+    }
+}
+
+function stringToPointer(?string $str, callable $f): mixed
+{
+    $cStr = FFI::new("char *");
+    $cLen = 0;
+
+    if ($str) {
+        $cLen = strlen($str) + 1;
+        $cStr = FFI::new(FFI::arrayType(FFI::type("char"), [$cLen]), owned: false);
+        FFI::memcpy($cStr, $str, strlen($str));
+    }
+
+    $result = $f($cStr, $cLen);
+    if ($cStr != null) {
+        FFI::free($cStr);
+    }
+    return $result;
 }
 
 class Statement
 {
+    /** Never use this outside of Connection::prepare */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
-    function __destruct()
+    public function __destruct()
     {
-        $this->ffi->libsql_free_stmt($this->inner);
+        $this->ffi->libsql_statement_deinit($this->inner);
     }
 
     public function execute(): void
     {
-        $err = $this->ffi->new('const char *');
-        if ($this->ffi->libsql_execute_stmt($this->inner, FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
+        $exec = $this->ffi->libsql_statement_execute($this->inner);
+        errIf($exec->err, $this->ffi);
     }
 
     public function query(): Rows
     {
-        $rows = $this->ffi->new('libsql_rows_t');
-        $err = $this->ffi->new('const char *');
-        if ($this->ffi->libsql_query_stmt($this->inner, FFI::addr($rows), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
+        $rows = $this->ffi->libsql_statement_query($this->inner);
+        errIf($rows->err, $this->ffi);
 
         return new Rows($rows, $this->ffi);
     }
 
-    public function bind(...$params)
+    public function bind(array $params): Rows
     {
-        $i = 1;
-
-        foreach ($params as $param) {
-            switch (gettype($param)) {
-                case 'NULL':
-                    $err = $this->ffi->new('const char *');
-                    if ($this->ffi->libsql_bind_null($this->inner, $i, FFI::addr($err)) != 0) {
-                        $err_copy = FFI::string($err);
-                        $this->ffi->libsql_free_string($err);
-
-                        throw new Exception($err_copy);
+        foreach ($params as $key => $value) {
+            switch (gettype($key)) {
+                case 'integer':
+                    switch (gettype($value)) {
+                        case 'integer':
+                            $value = $this->ffi->libsql_integer($value);
+                            $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            break;
+                        case 'double':
+                            $value = $this->ffi->libsql_real($value);
+                            $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            break;
+                        case 'string':
+                            stringToPointer($value, function ($textPtr, $textLen) {
+                                $value = $this->ffi->libsql_text($textPtr, $textLen);
+                                $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            });
+                            break;
                     }
                     break;
                 case 'string':
-                    $err = $this->ffi->new('const char *');
-                    if (
-                        $this->ffi->libsql_bind_string(
-                            $this->inner,
-                            $i,
-                            $param,
-                            FFI::addr($err),
-                        ) != 0
-                    ) {
-                        $err_copy = FFI::string($err);
-                        $this->ffi->libsql_free_string($err);
-
-                        throw new Exception($err_copy);
-                    }
-                    break;
-                case 'double':
-                    $err = $this->ffi->new('const char *');
-                    if (
-                        $this->ffi->libsql_bind_float(
-                            $this->inner,
-                            $i,
-                            $param,
-                            FFI::addr($err)
-                        ) != 0
-                    ) {
-                        $err_copy = FFI::string($err);
-                        $this->ffi->libsql_free_string($err);
-
-                        throw new Exception($err_copy);
-                    }
-                    break;
-                case 'integer':
-                    $err = $this->ffi->new('const char *');
-                    if (
-                        $this->ffi->libsql_bind_int(
-                            $this->inner,
-                            $i,
-                            $param,
-                            FFI::addr($err),
-                        ) != 0
-                    ) {
-                        $err_copy = FFI::string($err);
-                        $this->ffi->libsql_free_string($err);
-
-                        throw new Exception($err_copy);
+                    switch (gettype($value)) {
+                        case 'integer':
+                            $value = $this->ffi->libsql_integer($value);
+                            $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            break;
+                        case 'double':
+                            $value = $this->ffi->libsql_real($value);
+                            $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            break;
+                        case 'string':
+                            stringToPointer($value, function ($textPtr, $textLen) use ($key) {
+                                $value = $this->ffi->libsql_text($textPtr, $textLen);
+                                $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            });
+                            break;
                     }
                     break;
             }
-
-            $i++;
         }
+
+        return $this;
     }
 }
 
@@ -128,97 +129,25 @@ class Row
     {
     }
 
-    function __destruct()
+    public function __destruct()
     {
-        $this->ffi->libsql_free_row($this->inner);
+        $this->ffi->libsql_row_deinit($this->inner);
     }
 
-    public function get(int $idx): string|int|float|null
+    public function value(int $idx): string|int|float|null
     {
-        $type = $this->ffi->new('int32_t');
-        $err = $this->ffi->new('const char *');
+        $value = $this->ffi->libsql_row_value($this->inner, $idx);
+        errIf($value->err, $this->ffi);
 
-        if ($this->ffi->libsql_column_type($this->inner, $idx, ffi::addr($type), ffi::addr($err)) != 0) {
-            $err_copy = ffi::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        return match ($type->cdata) {
-            1 /* LIBSQL_INT   */ => $this->getInt($idx),
-            2 /* LIBSQL_FLOAT */ => $this->getFloat($idx),
-            3 /* LIBSQL_TEXT  */ => $this->getString($idx),
-            4 /* LIBSQL_BLOB  */ => $this->getBlob($idx),
-            5 /* LIBSQL_NULL  */ => null,
+        return match ($value->ok->type) {
+            $this->ffi->LIBSQL_TYPE_INTEGER => $value->ok->value->integer,
+            $this->ffi->LIBSQL_TYPE_REAL => $value->ok->value->real,
+            $this->ffi->LIBSQL_TYPE_TEXT => sliceIntoString($value->ok, $this->ffi),
+            $this->ffi->LIBSQL_TYPE_BLOB => sliceIntoString($value->ok, $this->ffi),
+            $this->ffi->LIBSQL_TYPE_NULL => null,
         };
     }
 
-    public function getInt(int $idx): int
-    {
-        $integer = $this->ffi->new('int64_t');
-        $err = $this->ffi->new('const char *');
-
-        if ($this->ffi->libsql_get_int($this->inner, $idx, ffi::addr($integer), ffi::addr($err)) != 0) {
-            $err_copy = ffi::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        return $integer->cdata;
-    }
-
-    public function getFloat(int $idx): float
-    {
-        $double = $this->ffi->new('double');
-        $err = $this->ffi->new('const char *');
-
-        if ($this->ffi->libsql_get_float($this->inner, $idx, FFI::addr($double), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        return $double->cdata;
-    }
-
-    public function getString(int $idx): string
-    {
-        $str = $this->ffi->new('char *');
-        $err = $this->ffi->new('const char *');
-
-        if ($this->ffi->libsql_get_string($this->inner, $idx, FFI::addr($str), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        $result =  FFI::string($str);
-        $this->ffi->libsql_free_string($str);
-
-        return $result;
-    }
-
-    public function getBlob(int $idx): string
-    {
-        $blob = $this->ffi->new('blob');
-        $err = $this->ffi->new('const char *');
-
-        if ($this->ffi->libsql_get_blob($this->inner, $idx, FFI::addr($blob), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        $result =  FFI::string($blob->ptr, $blob->len);
-        $this->ffi->libsql_free_blob($blob);
-
-        return $result;
-    }
 }
 
 class Rows
@@ -227,9 +156,9 @@ class Rows
     {
     }
 
-    function __destruct()
+    public function __destruct()
     {
-        $this->ffi->libsql_free_rows($this->inner);
+        $this->ffi->libsql_rows_deinit($this->inner);
     }
 
     public function iterator(): iterable
@@ -247,22 +176,53 @@ class Rows
 
     public function next(): ?Row
     {
-        $row = $this->ffi->new('libsql_row_t');
-        $err = $this->ffi->new('const char *');
+        $row = $this->ffi->libsql_rows_next($this->inner);
+        errIf($row->err, $this->ffi);
 
-        if ($this->ffi->libsql_next_row($this->inner, FFI::addr($row), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        if (FFI::isNull($row)) {
+        if ($this->ffi->libsql_row_empty($row)) {
             return null;
         }
 
         return new Row($row, $this->ffi);
     }
+}
+
+class Transaction
+{
+    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    {
+    }
+
+    public function prepare(string $sql): Statement
+    {
+        $stmt = $this->ffi->libsql_transaction_prepare($this->inner, $sql);
+        errIf($stmt->err, $this->ffi);
+
+        return new Statement($stmt, $this->ffi);
+    }
+
+    public function query(string $sql, array $params = []): Rows
+    {
+        return $this->prepare($sql)->bind($params)->query();
+    }
+
+    public function execute(string $sql, array $params = []): void
+    {
+        return $this->prepare($sql)->bind($params)->execute();
+    }
+
+    public function commit()
+    {
+        $value = $this->ffi->libsql_transaction_commit($this->inner);
+        errIf($value->err, $this->ffi);
+    }
+
+    public function rollback()
+    {
+        $value = $this->ffi->libsql_transaction_rollback($this->inner);
+        errIf($value->err, $this->ffi);
+    }
+
 }
 
 class Connection
@@ -271,51 +231,35 @@ class Connection
     {
     }
 
-    function __destruct()
+    public function __destruct()
     {
-        $this->ffi->libsql_disconnect($this->inner);
+        $this->ffi->libsql_connection_deinit($this->inner);
     }
 
     public function prepare(string $sql): Statement
     {
-        $stmt = $this->ffi->new('libsql_stmt_t');
-        $err = $this->ffi->new('const char *');
-        if ($this->ffi->libsql_prepare($this->inner, $sql, FFI::addr($stmt), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
+        $stmt = $this->ffi->libsql_connection_prepare($this->inner, $sql);
+        errIf($stmt->err, $this->ffi);
 
         return new Statement($stmt, $this->ffi);
     }
 
-    public function query(string $sql): Rows
+    public function transaction(): Transaction
     {
-        $rows = $this->ffi->new('libsql_rows_t');
-        $err = $this->ffi->new('const char *');
-        if ($this->ffi->libsql_query($this->inner, $sql, FFI::addr($rows), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
+        $tx = $this->ffi->libsql_connection_transaction($this->inner);
+        errIf($tx->err, $this->ffi);
 
-            throw new Exception($err_copy);
-        }
-
-        return new Rows($rows, $this->ffi);
+        return new Transaction($tx, $this->ffi);
     }
 
-    public function execute(string $sql)
+    public function query(string $sql, array $params = []): Rows
     {
-        $err = $this->ffi->new('const char *');
+        return $this->prepare($sql)->bind($params)->query();
+    }
 
-        if ($this->ffi->libsql_execute($this->inner, $sql, FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        return;
+    public function execute(string $sql, array $params = []): void
+    {
+        $this->prepare($sql)->bind($params)->execute();
     }
 }
 
@@ -325,24 +269,27 @@ class Database
     {
     }
 
-    function __destruct()
+    public function __destruct()
     {
-        $this->ffi->libsql_close($this->inner);
+        $this->ffi->libsql_database_deinit($this->inner);
     }
 
-    public function connect()
+    /**
+     * Create connection to libSQL database. Will close automaticaly once no
+     * one is holding a reference to it.
+     */
+    public function connect(): Connection
     {
-        $conn = $this->ffi->new('libsql_connection_t');
-        $err = $this->ffi->new('const char *');
-
-        if ($this->ffi->libsql_connect($this->inner, FFI::addr($conn), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
+        $conn = $this->ffi->libsql_database_connect($this->inner);
+        errIf($conn->err, $this->ffi);
 
         return new Connection($conn, $this->ffi);
+    }
+
+    public function sync(): void
+    {
+        $sync = $this->ffi->libsql_sync($this->inner);
+        errIf($sync->err, $this->ffi);
     }
 }
 
@@ -366,47 +313,41 @@ class Libsql
         );
     }
 
-    public function openLocal(string $path): Database
+    public function openLocal(string $path, ?string $encryptionKey = null): Database
     {
-        $db = $this->ffi->new('libsql_database_t');
-        $err = $this->ffi->new('const char *');
+        return stringToPointer($path, function ($pathPtr) {
+            return stringToPointer($encryptionKey, function ($encryptionKeyPtr) {
+                $desc = $this->ffi->new('libsql_database_desc_t');
+                $desc->path = $pathPtr;
+                $desc->encryption_key = $encryptionKeyPtr;
 
-        if ($this->ffi->libsql_open_ext($path, FFI::addr($db), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
+                $db = $this->ffi->libsql_database_init($desc);
+                errIf($db->err, $this->ffi);
 
-            throw new Exception($err_copy);
-        }
-
-        return new Database($db, $this->ffi);
+                return new Database($db, $this->ffi);
+            });
+        });
     }
 
     public function openRemote(
         string $url,
+        #[\SensitiveParameter]
         string $authToken,
         bool $withWebpki = false
     ): Database {
-        $db = $this->ffi->new('libsql_database_t');
+        return stringToPointer($url, function ($urlPtr) {
+            return stringToPointer($authTokenPtr, function ($authTokenPtr) {
+                $desc = $this->ffi->new('libsql_database_desc_t');
+                $desc->url = $urlPtr;
+                $desc->auth_token = $authTokenPtr;
+                $desc->withWebpki = $withWebpki;
 
-        if ($withWebpki) {
-            $err = $this->ffi->new('const char *');
-            if ($this->ffi->libsql_open_remote_with_webpki($url, $authToken, FFI::addr($db), FFI::addr($err)) != 0) {
-                $err_copy = FFI::string($err);
-                $this->ffi->libsql_free_string($err);
+                $db = $this->ffi->libsql_database_init($desc);
+                errIf($db->err, $this->ffi);
 
-                throw new Exception($err_copy);
-            }
-        } else {
-            $err = $this->ffi->new('const char *');
-            if ($this->ffi->libsql_open_remote($url, $authToken, FFI::addr($db), FFI::addr($err)) != 0) {
-                $err_copy = FFI::string($err);
-                $this->ffi->libsql_free_string($err);
-
-                throw new Exception($err_copy);
-            }
-        }
-
-        return new Database($db, $this->ffi);
+                return new Database($db, $this->ffi);
+            });
+        });
     }
 
     public function openEmbeddedReplica(
@@ -416,43 +357,28 @@ class Libsql
         string $authToken,
         #[\SensitiveParameter]
         ?string $encryptionKey = null,
-        bool $readYourWrites = false,
         int $syncInterval = 0,
-        bool $withWebpki = false,
+        bool $readYourWrites = false,
+        bool $webpki = false,
     ): Database {
-        $db = $this->ffi->new('libsql_database_t');
-        $err = $this->ffi->new('const char *');
+        return stringToPointer($path, function ($pathPtr) {
+            return stringToPointer($url, function ($urlPtr) {
+                return stringToPointer($authToken, function ($authTokenPtr) {
+                    return stringToPointer($encryptionKey, function ($encryptionKeyPtr) {
+                        $desc = $this->ffi->new('libsql_database_desc_t');
+                        $desc->url = $urlPtr;
+                        $desc->auth_token = $authTokenPtr;
+                        $desc->encryption_key = $encryptionKeyPtr;
+                        $desc->webpki = $withWebpki;
+                        $desc->not_read_your_writes = !$readYourWrites;
 
-        $config = $this->ffi->new('libsql_config');
+                        $db = $this->ffi->libsql_database_init($desc);
+                        errIf($$db->err, this->ffi);
 
-        $config->db_path = stringToUnmanagedPointer($path);
-        $config->primary_url = stringToUnmanagedPointer($url);
-        $config->auth_token = stringToUnmanagedPointer($authToken);
-
-        if ($encryptionKey != null) {
-            $config->encryption_key = stringToUnmanagedPointer($encryptionKey);
-        }
-
-        $config->with_webpki = $withWebpki ? 0 : 1;
-        $config->read_your_writes = $readYourWrites ? 0 : 1;
-        $config->sync_interval = $syncInterval;
-
-
-        if ($this->ffi->libsql_open_sync_with_config($config, FFI::addr($db), FFI::addr($err)) != 0) {
-            $err_copy = FFI::string($err);
-            $this->ffi->libsql_free_string($err);
-
-            throw new Exception($err_copy);
-        }
-
-        FFI::free($config->db_path);
-        FFI::free($config->primary_url);
-        FFI::free($config->auth_token);
-
-        if ($encryptionKey) {
-            FFI::free($config->encryption_key);
-        }
-
-        return new Database($db, $this->ffi);
+                        return new Database($db, $this->ffi);
+                    });
+                });
+            });
+        });
     }
 }
