@@ -134,7 +134,7 @@ class Row
         $this->ffi->libsql_row_deinit($this->inner);
     }
 
-    public function value(int $idx): string|int|float|null
+    public function get(int $idx): string|int|float|null
     {
         $value = $this->ffi->libsql_row_value($this->inner, $idx);
         errIf($value->err, $this->ffi);
@@ -316,7 +316,7 @@ class Libsql
     public function openLocal(string $path, ?string $encryptionKey = null): Database
     {
         return stringToPointer($path, function ($pathPtr) {
-            return stringToPointer($encryptionKey, function ($encryptionKeyPtr) {
+            return stringToPointer($encryptionKey, function ($encryptionKeyPtr) use ($pathPtr) {
                 $desc = $this->ffi->new('libsql_database_desc_t');
                 $desc->path = $pathPtr;
                 $desc->encryption_key = $encryptionKeyPtr;
@@ -336,7 +336,7 @@ class Libsql
         bool $withWebpki = false
     ): Database {
         return stringToPointer($url, function ($urlPtr) {
-            return stringToPointer($authTokenPtr, function ($authTokenPtr) {
+            return stringToPointer($authTokenPtr, function ($authTokenPtr) use($urlPtr) {
                 $desc = $this->ffi->new('libsql_database_desc_t');
                 $desc->url = $urlPtr;
                 $desc->auth_token = $authTokenPtr;
@@ -362,9 +362,9 @@ class Libsql
         bool $webpki = false,
     ): Database {
         return stringToPointer($path, function ($pathPtr) {
-            return stringToPointer($url, function ($urlPtr) {
-                return stringToPointer($authToken, function ($authTokenPtr) {
-                    return stringToPointer($encryptionKey, function ($encryptionKeyPtr) {
+            return stringToPointer($url, function ($urlPtr) use($pathPtr) {
+                return stringToPointer($authToken, function ($authTokenPtr) use($pathPtr, $urlPtr) {
+                    return stringToPointer($encryptionKey, function ($encryptionKeyPtr) use($pathPtr, $urlPtr, $authToken){
                         $desc = $this->ffi->new('libsql_database_desc_t');
                         $desc->url = $urlPtr;
                         $desc->auth_token = $authTokenPtr;
