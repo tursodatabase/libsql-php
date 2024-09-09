@@ -1,5 +1,5 @@
 {
-    "name": "tursodatabase/libsql",
+    "name": "turso/libsql",
     "description": "libSQL bindings for PHP",
     "type": "library",
     "authors": [
@@ -9,10 +9,6 @@
         }
     ],
     "autoload": {
-        "files": [
-            "lib/universal2-apple-darwin/liblibsql.dylib",
-            "lib/x86_64-unknown-linux-gnu/liblibsql.so"
-        ],
         "classmap": [ "src/" ],
         "psr-4": {
           "Turso\\Libsql\\": "src/",
@@ -28,6 +24,12 @@
     },
     "scripts": {
         "test": [ "@php vendor/bin/phpunit" ]
+    },
+    "extra": {
+        "files": [
+            "lib/universal2-apple-darwin/liblibsql.dylib",
+            "lib/x86_64-unknown-linux-gnu/liblibsql.so"
+        ]
     },
     "minimum-stability": "dev",
     "license": "MIT"
