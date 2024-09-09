@@ -208,7 +208,7 @@ class Transaction
 
     public function execute(string $sql, array $params = []): void
     {
-        return $this->prepare($sql)->bind($params)->execute();
+        $this->prepare($sql)->bind($params)->execute();
     }
 
     public function commit()
