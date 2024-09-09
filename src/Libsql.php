@@ -76,7 +76,7 @@ class Statement
         return new Rows($rows, $this->ffi);
     }
 
-    public function bind(array $params): Rows
+    public function bind(array $params): Statement
     {
         foreach ($params as $key => $value) {
             switch (gettype($key)) {
