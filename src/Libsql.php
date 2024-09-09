@@ -11,7 +11,6 @@ use Exception as Exception;
 
 function errIf(?FFI\CData $err, FFI $ffi)
 {
-    var_dump($err);
     if ($err != null) {
         $message = FFI::string($ffi->libsql_error_message($db->err));
         $ffi->libsql_error_deinit($db->err);
@@ -33,22 +32,31 @@ function sliceIntoString(FFI\CData $value, FFI $ffi): string
     }
 }
 
-function stringToPointer(?string $str, callable $f): mixed
+class CharStar
 {
-    $cStr = FFI::new("char *");
-    $cLen = 0;
+    public FFI\CData $ptr;
+    public int $len;
 
-    if ($str) {
-        $cLen = strlen($str) + 1;
-        $cStr = FFI::new(FFI::arrayType(FFI::type("char"), [$cLen]), owned: false);
-        FFI::memcpy($cStr, $str, strlen($str));
+    public function __construct(?string $str)
+    {
+        $cStr = FFI::new("char *");
+        $cLen = 0;
+
+        if ($str) {
+            $cLen = strlen($str) + 1;
+            $cStr = FFI::new(FFI::arrayType(FFI::type("char"), [$cLen]), owned: false);
+            FFI::memcpy($cStr, $str, strlen($str));
+        }
+
+        $this->ptr = $cStr;
+        $this->len = $cLen;
     }
 
-    $result = $f($cStr, $cLen);
-    if ($cStr != null) {
-        FFI::free($cStr);
+    public function destroy() {
+        if ($this->ptr != null) {
+            FFI::free($this->ptr);
+        }
     }
-    return $result;
 }
 
 class Statement
@@ -85,17 +93,20 @@ class Statement
                     switch (gettype($value)) {
                         case 'integer':
                             $value = $this->ffi->libsql_integer($value);
-                            $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            errIf($bind->err, $this->ffi);
                             break;
                         case 'double':
                             $value = $this->ffi->libsql_real($value);
-                            $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            errIf($bind->err, $this->ffi);
                             break;
                         case 'string':
-                            stringToPointer($value, function ($textPtr, $textLen) {
-                                $value = $this->ffi->libsql_text($textPtr, $textLen);
-                                $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            });
+                            $cValue = new CharStar($value);
+                            $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
+                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            errIf($bind->err, $this->ffi);
+                            $cValue->destroy();
                             break;
                     }
                     break;
@@ -103,17 +114,19 @@ class Statement
                     switch (gettype($value)) {
                         case 'integer':
                             $value = $this->ffi->libsql_integer($value);
-                            $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            errIf($bind->err, $this->ffi);
                             break;
                         case 'double':
                             $value = $this->ffi->libsql_real($value);
-                            $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            errIf($bind->err, $this->ffi);
                             break;
                         case 'string':
-                            stringToPointer($value, function ($textPtr, $textLen) use ($key) {
-                                $value = $this->ffi->libsql_text($textPtr, $textLen);
-                                $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            });
+                            $cValue = new CharStar($value);
+                            $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
+                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            errIf($bind->err, $this->ffi);
                             break;
                     }
                     break;
@@ -316,19 +329,21 @@ class Libsql
 
     public function openLocal(string $path, ?string $encryptionKey = null): Database
     {
-        return stringToPointer($path, function ($pathPtr) {
-            return stringToPointer($encryptionKey, function ($encryptionKeyPtr) use ($pathPtr) {
-                $desc = $this->ffi->new('libsql_database_desc_t');
-                $desc->path = $pathPtr;
-                $desc->encryption_key = $encryptionKeyPtr;
+        $cPath = new CharStar($path);
+        $cEncryptionKey = new CharStar($encryptionKey);
 
-                $db = $this->ffi->libsql_database_init($desc);
-                errIf($db->err, $this->ffi);
+        $desc = $this->ffi->new('libsql_database_desc_t');
+        $desc->path = $cPath->ptr;
+        $desc->encryption_key = $cEncryptionKey->ptr;
 
-                return new Database($db, $this->ffi);
-            });
-        });
-    }
+        $db = $this->ffi->libsql_database_init($desc);
+        errIf($db->err, $this->ffi);
+
+        $cPath->destroy();
+        $cEncryptionKey->destroy();
+
+        return new Database($db, $this->ffi);
+}
 
     public function openRemote(
         string $url,
@@ -336,19 +351,21 @@ class Libsql
         string $authToken,
         bool $withWebpki = false
     ): Database {
-        return stringToPointer($url, function ($urlPtr) {
-            return stringToPointer($authTokenPtr, function ($authTokenPtr) use($urlPtr) {
-                $desc = $this->ffi->new('libsql_database_desc_t');
-                $desc->url = $urlPtr;
-                $desc->auth_token = $authTokenPtr;
-                $desc->withWebpki = $withWebpki;
+        $cUrl = new CharStar($url);
+        $cAuthToken = new CharStar($authToken);
 
-                $db = $this->ffi->libsql_database_init($desc);
-                errIf($db->err, $this->ffi);
+        $desc = $this->ffi->new('libsql_database_desc_t');
+        $desc->url = $cUrl->ptr;
+        $desc->auth_token = $cAuthToken->ptr;
+        $desc->withWebpki = $withWebpki;
 
-                return new Database($db, $this->ffi);
-            });
-        });
+        $db = $this->ffi->libsql_database_init($desc);
+        errIf($db->err, $this->ffi);
+
+        $cUrl->destroy();
+        $cAuthToken->destroy();
+
+        return new Database($db, $this->ffi);
     }
 
     public function openEmbeddedReplica(
@@ -362,24 +379,27 @@ class Libsql
         bool $readYourWrites = false,
         bool $webpki = false,
     ): Database {
-        return stringToPointer($path, function ($pathPtr) {
-            return stringToPointer($url, function ($urlPtr) use($pathPtr) {
-                return stringToPointer($authToken, function ($authTokenPtr) use($pathPtr, $urlPtr) {
-                    return stringToPointer($encryptionKey, function ($encryptionKeyPtr) use($pathPtr, $urlPtr, $authToken){
-                        $desc = $this->ffi->new('libsql_database_desc_t');
-                        $desc->url = $urlPtr;
-                        $desc->auth_token = $authTokenPtr;
-                        $desc->encryption_key = $encryptionKeyPtr;
-                        $desc->webpki = $withWebpki;
-                        $desc->not_read_your_writes = !$readYourWrites;
+        $cPath = new CharStar($path);
+        $cUrl = new CharStar($url);
+        $cAuthToken = new CharStar($authToken);
+        $cEncryptionKey = new CharStar($encryptionKey);
 
-                        $db = $this->ffi->libsql_database_init($desc);
-                        errIf($$db->err, this->ffi);
+        $desc = $this->ffi->new('libsql_database_desc_t');
+        $desc->path = $cPath->ptr;
+        $desc->url = $cUrl->ptr;
+        $desc->auth_token = $cAuthToken->ptr;
+        $desc->encryption_key = $encryptionKey->ptr;
+        $desc->webpki = $withWebpki;
+        $desc->not_read_your_writes = !$readYourWrites;
 
-                        return new Database($db, $this->ffi);
-                    });
-                });
-            });
-        });
+        $db = $this->ffi->libsql_database_init($desc);
+        errIf($$db->err, this->ffi);
+
+        $cPath->destroy();
+        $cUrl->destroy();
+        $cAuthToken->destroy();
+        $cEncryptionKey->destroy();
+
+        return new Database($db, $this->ffi);
     }
 }
