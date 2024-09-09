@@ -1,6 +1,5 @@
 {
     "name": "tursodatabase/libsql",
-    "version": "0.1.0",
     "description": "libSQL bindings for PHP",
     "type": "library",
     "authors": [
@@ -30,5 +29,6 @@
     "scripts": {
         "test": [ "@php vendor/bin/phpunit" ]
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "license": "MIT"
 }
