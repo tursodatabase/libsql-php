@@ -11,7 +11,8 @@ use Exception as Exception;
 
 function errIf(?FFI\CData $err, FFI $ffi)
 {
-    if ($db->err != null) {
+    var_dump($err);
+    if ($err != null) {
         $message = FFI::string($ffi->libsql_error_message($db->err));
         $ffi->libsql_error_deinit($db->err);
         throw new Exception($message);
