@@ -9,15 +9,17 @@ if (!extension_loaded('ffi')) {
 use FFI;
 use Exception as Exception;
 
+/** @internal */
 function errIf(?FFI\CData $err, FFI $ffi)
 {
     if ($err != null) {
-        $message = FFI::string($ffi->libsql_error_message($db->err));
-        $ffi->libsql_error_deinit($db->err);
+        $message = FFI::string($ffi->libsql_error_message($err));
+        $ffi->libsql_error_deinit($err);
         throw new Exception($message);
     }
 }
 
+/** @internal */
 function sliceIntoString(FFI\CData $value, FFI $ffi): string
 {
     switch ($value->type) {
@@ -32,6 +34,7 @@ function sliceIntoString(FFI\CData $value, FFI $ffi): string
     }
 }
 
+/** @internal */
 class CharStar
 {
     public FFI\CData $ptr;
@@ -52,7 +55,8 @@ class CharStar
         $this->len = $cLen;
     }
 
-    public function destroy() {
+    public function destroy(): void
+    {
         if ($this->ptr != null) {
             FFI::free($this->ptr);
         }
@@ -61,22 +65,35 @@ class CharStar
 
 class Statement
 {
-    /** Never use this outside of Connection::prepare */
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->ffi->libsql_statement_deinit($this->inner);
     }
 
+    /**
+     * Execute statement.
+     *
+     * @return void
+     */
     public function execute(): void
     {
         $exec = $this->ffi->libsql_statement_execute($this->inner);
         errIf($exec->err, $this->ffi);
     }
 
+    /**
+     * Query statement.
+     *
+     * @return Rows
+     */
     public function query(): Rows
     {
         $rows = $this->ffi->libsql_statement_query($this->inner);
@@ -85,6 +102,14 @@ class Statement
         return new Rows($rows, $this->ffi);
     }
 
+    /**
+     * Bind parameters to statement, mixing positional and named parameters is
+     * not supported. This returns $this to allow chaining bind and query.
+     *
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return Statement
+     */
     public function bind(array $params): Statement
     {
         foreach ($params as $key => $value) {
@@ -105,8 +130,11 @@ class Statement
                             $cValue = new CharStar($value);
                             $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
                             $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            errIf($bind->err, $this->ffi);
-                            $cValue->destroy();
+                            try {
+                                errIf($bind->err, $this->ffi);
+                            } finally {
+                                $cValue->destroy();
+                            }
                             break;
                     }
                     break;
@@ -126,7 +154,11 @@ class Statement
                             $cValue = new CharStar($value);
                             $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
                             $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            errIf($bind->err, $this->ffi);
+                            try {
+                                errIf($bind->err, $this->ffi);
+                            } finally {
+                                $cValue->destroy();
+                            }
                             break;
                     }
                     break;
@@ -139,18 +171,29 @@ class Statement
 
 class Row
 {
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->ffi->libsql_row_deinit($this->inner);
     }
 
-    public function get(int $idx): string|int|float|null
+    /**
+     * Get value from row at the given index.
+     *
+     * @param int $index
+     *
+     * @return string|int|float|null
+     */
+    public function get(int $index): string|int|float|null
     {
-        $value = $this->ffi->libsql_row_value($this->inner, $idx);
+        $value = $this->ffi->libsql_row_value($this->inner, $index);
         errIf($value->err, $this->ffi);
 
         return match ($value->ok->type) {
@@ -166,15 +209,24 @@ class Row
 
 class Rows
 {
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->ffi->libsql_rows_deinit($this->inner);
     }
 
+    /**
+     * Iterator over rows.
+     *
+     * @return Generator<Row>
+     */
     public function iterator(): iterable
     {
         while (true) {
@@ -188,6 +240,11 @@ class Rows
         }
     }
 
+    /**
+     * Get the next row.
+     *
+     * @return ?Row
+     */
     public function next(): ?Row
     {
         $row = $this->ffi->libsql_rows_next($this->inner);
@@ -203,10 +260,18 @@ class Rows
 
 class Transaction
 {
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * Prepare statement with the given query in a transaction.
+     *
+     * @param string $sql
+     *
+     * @return Statement
+     */
     public function prepare(string $sql): Statement
     {
         $stmt = $this->ffi->libsql_transaction_prepare($this->inner, $sql);
@@ -215,23 +280,49 @@ class Transaction
         return new Statement($stmt, $this->ffi);
     }
 
+    /**
+     * Query with parameters in a transaction.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return Rows
+     */
     public function query(string $sql, array $params = []): Rows
     {
         return $this->prepare($sql)->bind($params)->query();
     }
 
+    /**
+     * Execute with parameters in a transaction.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return void
+     */
     public function execute(string $sql, array $params = []): void
     {
         $this->prepare($sql)->bind($params)->execute();
     }
 
-    public function commit()
+    /**
+     * Commit a transaction.
+     *
+     * @return void
+     */
+    public function commit(): void
     {
         $value = $this->ffi->libsql_transaction_commit($this->inner);
         errIf($value->err, $this->ffi);
     }
 
-    public function rollback()
+    /**
+     * Rollback a transaction.
+     *
+     * @return void
+     */
+    public function rollback(): void
     {
         $value = $this->ffi->libsql_transaction_rollback($this->inner);
         errIf($value->err, $this->ffi);
@@ -241,15 +332,26 @@ class Transaction
 
 class Connection
 {
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->ffi->libsql_connection_deinit($this->inner);
     }
 
+    /**
+     * Prepare statement with the given query.
+     *
+     * @param string $sql
+     *
+     * @return Statement
+     */
     public function prepare(string $sql): Statement
     {
         $stmt = $this->ffi->libsql_connection_prepare($this->inner, $sql);
@@ -258,6 +360,11 @@ class Connection
         return new Statement($stmt, $this->ffi);
     }
 
+    /**
+     * Begin a transaction.
+     *
+     * @return Transaction
+     */
     public function transaction(): Transaction
     {
         $tx = $this->ffi->libsql_connection_transaction($this->inner);
@@ -266,11 +373,27 @@ class Connection
         return new Transaction($tx, $this->ffi);
     }
 
+    /**
+     * Query with parameters.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return Rows
+     */
     public function query(string $sql, array $params = []): Rows
     {
         return $this->prepare($sql)->bind($params)->query();
     }
 
+    /**
+     * Execute with parameters.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return void
+     */
     public function execute(string $sql, array $params = []): void
     {
         $this->prepare($sql)->bind($params)->execute();
@@ -279,18 +402,23 @@ class Connection
 
 class Database
 {
+    /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->ffi->libsql_database_deinit($this->inner);
     }
 
     /**
-     * Create connection to libSQL database. Will close automaticaly once no
-     * one is holding a reference to it.
+     * Create connection to libSQL database.
+     *
+     * @return Connection
      */
     public function connect(): Connection
     {
@@ -300,6 +428,11 @@ class Database
         return new Connection($conn, $this->ffi);
     }
 
+    /**
+     * Sync frames with the primary.
+     *
+     * @return void
+     */
     public function sync(): void
     {
         $sync = $this->ffi->libsql_sync($this->inner);
@@ -327,56 +460,28 @@ class Libsql
         );
     }
 
-    public function openLocal(string $path, ?string $encryptionKey = null): Database
-    {
-        $cPath = new CharStar($path);
-        $cEncryptionKey = new CharStar($encryptionKey);
-
-        $desc = $this->ffi->new('libsql_database_desc_t');
-        $desc->path = $cPath->ptr;
-        $desc->encryption_key = $cEncryptionKey->ptr;
-
-        $db = $this->ffi->libsql_database_init($desc);
-        errIf($db->err, $this->ffi);
-
-        $cPath->destroy();
-        $cEncryptionKey->destroy();
-
-        return new Database($db, $this->ffi);
-}
-
-    public function openRemote(
-        string $url,
-        #[\SensitiveParameter]
-        string $authToken,
-        bool $withWebpki = false
-    ): Database {
-        $cUrl = new CharStar($url);
-        $cAuthToken = new CharStar($authToken);
-
-        $desc = $this->ffi->new('libsql_database_desc_t');
-        $desc->url = $cUrl->ptr;
-        $desc->auth_token = $cAuthToken->ptr;
-        $desc->withWebpki = $withWebpki;
-
-        $db = $this->ffi->libsql_database_init($desc);
-        errIf($db->err, $this->ffi);
-
-        $cUrl->destroy();
-        $cAuthToken->destroy();
-
-        return new Database($db, $this->ffi);
-    }
-
+    /**
+     * Open a embedded replica database.
+     *
+     * @param string $path Path to the database file
+     * @param string $url Url of the primary
+     * @param string $authToken Auth token
+     * @param ?string $encryptionKey Key used to de/encrypt the database (default: null)
+     * @param int $syncInterval Interval used to sync frames periodicaly with primary (default: 0, i.e.: only sync manually)
+     * @param bool $readYourWrites Make writes visible within a sync period (default: true)
+     * @param bool $webpki Use Webpki (default: false)
+     *
+     * @return Database
+     */
     public function openEmbeddedReplica(
-        string $path,
-        string $url,
+        ?string $path = null,
+        ?string $url = null,
         #[\SensitiveParameter]
-        string $authToken,
+        ?string $authToken = null,
         #[\SensitiveParameter]
         ?string $encryptionKey = null,
         int $syncInterval = 0,
-        bool $readYourWrites = false,
+        bool $readYourWrites = true,
         bool $webpki = false,
     ): Database {
         $cPath = new CharStar($path);
@@ -389,16 +494,86 @@ class Libsql
         $desc->url = $cUrl->ptr;
         $desc->auth_token = $cAuthToken->ptr;
         $desc->encryption_key = $encryptionKey->ptr;
-        $desc->webpki = $withWebpki;
+        $desc->webpki = $webpki;
         $desc->not_read_your_writes = !$readYourWrites;
 
         $db = $this->ffi->libsql_database_init($desc);
-        errIf($$db->err, this->ffi);
 
-        $cPath->destroy();
-        $cUrl->destroy();
-        $cAuthToken->destroy();
-        $cEncryptionKey->destroy();
+        try {
+            errIf($db->err, $this->ffi);
+        } finally {
+            $cPath->destroy();
+            $cUrl->destroy();
+            $cAuthToken->destroy();
+            $cEncryptionKey->destroy();
+        }
+
+        return new Database($db, $this->ffi);
+    }
+
+    /**
+     * Open remote database.
+     *
+     * @param string $url Url to the primary
+     * @param string $authToken Auth token provided by Turso
+     * @param bool $webpki Use Webpki (default: false)
+     *
+     * @return Database
+     */
+    public function openRemote(
+        ?string $url = null,
+        #[\SensitiveParameter]
+        ?string $authToken = null,
+        #[\SensitiveParameter]
+        bool $webpki = false,
+    ): Database {
+        $cUrl = new CharStar($url);
+        $cAuthToken = new CharStar($authToken);
+
+        $desc = $this->ffi->new('libsql_database_desc_t');
+        $desc->url = $cUrl->ptr;
+        $desc->auth_token = $cAuthToken->ptr;
+        $desc->webpki = $webpki;
+
+        $db = $this->ffi->libsql_database_init($desc);
+
+        try {
+            errIf($db->err, $this->ffi);
+        } finally {
+            $cUrl->destroy();
+            $cAuthToken->destroy();
+        }
+
+        return new Database($db, $this->ffi);
+    }
+
+    /**
+     * Open a local database.
+     *
+     * @param string $path Path to the database file
+     * @param ?string $encryptionKey Key used to de/encrypt the database (default: null)
+     *
+     * @return Database
+     */
+    public function openLocal(
+        string $path,
+        ?string $encryptionKey = null,
+    ): Database {
+        $cPath = new CharStar($path);
+        $cEncryptionKey = new CharStar($encryptionKey);
+
+        $desc = $this->ffi->new('libsql_database_desc_t');
+        $desc->path = $cPath->ptr;
+        $desc->encryption_key = $cEncryptionKey->ptr;
+
+        $db = $this->ffi->libsql_database_init($desc);
+
+        try {
+            errIf($db->err, $this->ffi);
+        } finally {
+            $cPath->destroy();
+            $cEncryptionKey->destroy();
+        }
 
         return new Database($db, $this->ffi);
     }
