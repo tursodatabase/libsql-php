@@ -23,7 +23,7 @@
         "friendsofphp/php-cs-fixer": "^3.64"
     },
     "scripts": {
-        "test": [ "@php vendor/bin/phpunit" ]
+        "test": [ "@php vendor/bin/phpunit tests --fail-on-warning" ]
     },
     "extra": {
         "files": [

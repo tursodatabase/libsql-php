@@ -8,6 +8,7 @@ if (!extension_loaded('ffi')) {
 
 use FFI;
 use Exception as Exception;
+use FFI\CData;
 
 /** @internal */
 function errIf(?FFI\CData $err, FFI $ffi)
@@ -40,6 +41,7 @@ class CharStar
     public FFI\CData $ptr;
     public int $len;
 
+    /** Allocate a char pointer from the contents of a string. */
     public function __construct(?string $str)
     {
         $cStr = FFI::new("char *");
@@ -55,6 +57,7 @@ class CharStar
         $this->len = $cLen;
     }
 
+    /** Deallocate memory. */
     public function destroy(): void
     {
         if ($this->ptr != null) {
@@ -185,6 +188,56 @@ class Row
     }
 
     /**
+     * Transform a row into a array of values.
+     *
+     * @return array<<missing>,string|int|float|null>
+     */
+    public function toArray(): array
+    {
+        $result = [];
+
+        for ($i = 0; $i < $this->length(); $i++) {
+            $result[$this->name($i)] = $this->get($i);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get amount of columns in this row.
+     *
+     * @param int $index
+     *
+     * @return ?string
+     */
+    public function length(): int
+    {
+        return $this->ffi->libsql_row_length($this->inner);
+    }
+
+    /**
+     * Get name of the column at the given index. If the index is out of
+     * bounds, `null` will be returned.
+     *
+     * @param int $index
+     *
+     * @return ?string
+     */
+    public function name(int $index): ?string
+    {
+        $nameSlice = $this->ffi->libsql_row_name($this->inner, $index);
+
+        if (FFI::isNull($nameSlice->ptr)) {
+            return null;
+        }
+
+        $name = FFI::string($nameSlice->ptr, $nameSlice->len - 1);
+        $this->ffi->libsql_slice_deinit($nameSlice);
+
+        return $name;
+    }
+
+    /**
      * Get value from row at the given index.
      *
      * @param int $index
@@ -220,6 +273,24 @@ class Rows
     public function __destruct()
     {
         $this->ffi->libsql_rows_deinit($this->inner);
+    }
+
+    /**
+     * Transform rows into a array of arrays.
+     *
+     * @return array<array<string, string|int|float|null>>
+     */
+    public function fetchArray(): array
+    {
+        $result = [];
+        $i = 0;
+
+        foreach ($this->iterator() as $row) {
+            $result[$i] = $row->toArray();
+            $i++;
+        }
+
+        return $result;
     }
 
     /**
@@ -512,7 +583,7 @@ class Libsql
     }
 
     /**
-     * Open remote database.
+     * Open a remote database.
      *
      * @param string $url Url to the primary
      * @param string $authToken Auth token provided by Turso
