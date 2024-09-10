@@ -42,14 +42,14 @@ class CharStar
     public int $len;
 
     /** Allocate a char pointer from the contents of a string. */
-    public function __construct(?string $str)
+    public function __construct(?string $str, FFI $ffi)
     {
-        $cStr = FFI::new("char *");
+        $cStr = $ffi->new("char *");
         $cLen = 0;
 
         if ($str) {
             $cLen = strlen($str) + 1;
-            $cStr = FFI::new(FFI::arrayType(FFI::type("char"), [$cLen]), owned: false);
+            $cStr = $ffi->new(FFI::arrayType($ffi->type("char"), [$cLen]), owned: false);
             FFI::memcpy($cStr, $str, strlen($str));
         }
 
@@ -130,7 +130,7 @@ class Statement
                             errIf($bind->err, $this->ffi);
                             break;
                         case 'string':
-                            $cValue = new CharStar($value);
+                            $cValue = new CharStar($value, $this->ffi);
                             $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
                             $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
                             try {
@@ -154,7 +154,7 @@ class Statement
                             errIf($bind->err, $this->ffi);
                             break;
                         case 'string':
-                            $cValue = new CharStar($value);
+                            $cValue = new CharStar($value, $this->ffi);
                             $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
                             $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
                             try {
@@ -555,10 +555,10 @@ class Libsql
         bool $readYourWrites = true,
         bool $webpki = false,
     ): Database {
-        $cPath = new CharStar($path);
-        $cUrl = new CharStar($url);
-        $cAuthToken = new CharStar($authToken);
-        $cEncryptionKey = new CharStar($encryptionKey);
+        $cPath = new CharStar($path, $this->ffi);
+        $cUrl = new CharStar($url, $this->ffi);
+        $cAuthToken = new CharStar($authToken, $this->ffi);
+        $cEncryptionKey = new CharStar($encryptionKey, $this->ffi);
 
         $desc = $this->ffi->new('libsql_database_desc_t');
         $desc->path = $cPath->ptr;
@@ -598,8 +598,8 @@ class Libsql
         #[\SensitiveParameter]
         bool $webpki = false,
     ): Database {
-        $cUrl = new CharStar($url);
-        $cAuthToken = new CharStar($authToken);
+        $cUrl = new CharStar($url, $this->ffi);
+        $cAuthToken = new CharStar($authToken, $this->ffi);
 
         $desc = $this->ffi->new('libsql_database_desc_t');
         $desc->url = $cUrl->ptr;
@@ -630,8 +630,8 @@ class Libsql
         string $path,
         ?string $encryptionKey = null,
     ): Database {
-        $cPath = new CharStar($path);
-        $cEncryptionKey = new CharStar($encryptionKey);
+        $cPath = new CharStar($path, $this->ffi);
+        $cEncryptionKey = new CharStar($encryptionKey, $this->ffi);
 
         $desc = $this->ffi->new('libsql_database_desc_t');
         $desc->path = $cPath->ptr;
