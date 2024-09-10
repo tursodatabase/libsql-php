@@ -14,7 +14,7 @@
           inherit system;
           overlays = [
             (final: prev: {
-              php = prev.php.withExtensions ({ enabled, all }: enabled ++ [ all.ffi ]);
+              php = prev.php83.withExtensions ({ enabled, all }: enabled ++ [ all.ffi ]);
             })
           ];
         };

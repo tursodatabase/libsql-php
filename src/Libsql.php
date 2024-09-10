@@ -14,7 +14,7 @@ use FFI\CData;
 function errIf(?FFI\CData $err, FFI $ffi)
 {
     if ($err != null) {
-        $message = FFI::string($ffi->libsql_error_message($err));
+        $message = $ffi->libsql_error_message($err);
         $ffi->libsql_error_deinit($err);
         throw new Exception($message);
     }
