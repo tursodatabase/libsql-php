@@ -11,8 +11,8 @@
     "autoload": {
         "classmap": [ "src/" ],
         "psr-4": {
-          "Turso\\Libsql\\": "src/",
-          "Turso\\Libsql\\Tests\\": "tests/"
+          "Libsql\\": "src/",
+          "Libsql\\Tests\\": "tests/"
         }
     },
     "require": {

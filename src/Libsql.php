@@ -1,6 +1,6 @@
 <?php
 
-namespace Turso\Libsql;
+namespace Libsql;
 
 if (!extension_loaded('ffi')) {
     die('FFI extension is not loaded');
