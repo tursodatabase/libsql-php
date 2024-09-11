@@ -385,8 +385,7 @@ class Transaction
      */
     public function commit(): void
     {
-        $value = $this->ffi->libsql_transaction_commit($this->inner);
-        errIf($value->err, $this->ffi);
+        $this->ffi->libsql_transaction_commit($this->inner);
     }
 
     /**
@@ -396,8 +395,7 @@ class Transaction
      */
     public function rollback(): void
     {
-        $value = $this->ffi->libsql_transaction_rollback($this->inner);
-        errIf($value->err, $this->ffi);
+        $this->ffi->libsql_transaction_rollback($this->inner);
     }
 
 }
