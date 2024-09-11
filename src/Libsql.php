@@ -8,7 +8,6 @@ if (!extension_loaded('ffi')) {
 
 use FFI;
 use Exception as Exception;
-use FFI\CData;
 
 /** @internal */
 function errIf(?FFI\CData $err, FFI $ffi)
@@ -86,10 +85,12 @@ class Statement
      *
      * @return void
      */
-    public function execute(): void
+    public function execute(): int
     {
         $exec = $this->ffi->libsql_statement_execute($this->inner);
         errIf($exec->err, $this->ffi);
+
+        return $exec->rows_changed;
     }
 
     /**
@@ -370,11 +371,11 @@ class Transaction
      * @param string $sql
      * @param array<int,mixed>|array<string,mixed> $params
      *
-     * @return void
+     * @return int Rows changed
      */
-    public function execute(string $sql, array $params = []): void
+    public function execute(string $sql, array $params = []): int
     {
-        $this->prepare($sql)->bind($params)->execute();
+        return $this->prepare($sql)->bind($params)->execute();
     }
 
     /**
@@ -463,11 +464,11 @@ class Connection
      * @param string $sql
      * @param array<int,mixed>|array<string,mixed> $params
      *
-     * @return void
+     * @return int Rows changed
      */
-    public function execute(string $sql, array $params = []): void
+    public function execute(string $sql, array $params = []): int
     {
-        $this->prepare($sql)->bind($params)->execute();
+        return $this->prepare($sql)->bind($params)->execute();
     }
 }
 
