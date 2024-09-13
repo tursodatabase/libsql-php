@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+namespace Libsql\Tests;
+
 use PHPUnit\Framework\TestCase;
-use Turso\Libsql\Libsql;
+use Libsql\Libsql;
 
 final class Test extends TestCase
 {
@@ -14,6 +16,27 @@ final class Test extends TestCase
         $conn = $db->connect();
 
         $this->assertSame($conn->query('select 1')->next()->get(0), 1);
+    }
+
+    public function testBatch(): void
+    {
+        $libsql = new Libsql();
+        $db = $libsql->openLocal(path: ":memory:");
+        $conn = $db->connect();
+
+        $conn->execute_batch("
+            create table test (i integer);
+            insert into test values (1);
+            insert into test values (2);
+            insert into test values (3);
+        ");
+
+        $this->assertSame($conn->query("select * from test")->fetchArray(), [
+            [ "i" => 1 ],
+            [ "i" => 2 ],
+            [ "i" => 3 ],
+        ]);
+
     }
 
     public function testSelectAll(): void

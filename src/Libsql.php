@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Libsql;
 
 if (!extension_loaded('ffi')) {
@@ -31,6 +33,36 @@ function sliceIntoString(FFI\CData $value, FFI $ffi): string
             $blob = FFI::string($value->value->blob->ptr, $value->value->blob->len);
             $ffi->libsql_slice_deinit($value->value->blob);
             return $blob;
+    }
+}
+
+trait Prepareable {
+    abstract public function prepare(string $sql): Statement;
+
+    /**
+     * Query with parameters.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return Rows
+     */
+    public function query(string $sql, array $params = []): Rows
+    {
+        return $this->prepare($sql)->bind($params)->query();
+    }
+
+    /**
+     * Execute with parameters.
+     *
+     * @param string $sql
+     * @param array<int,mixed>|array<string,mixed> $params
+     *
+     * @return int Rows changed
+     */
+    public function execute(string $sql, array $params = []): int
+    {
+        return $this->prepare($sql)->bind($params)->execute();
     }
 }
 
@@ -73,6 +105,7 @@ class Statement
     }
 
     /**
+     * @internal
      * @return void
      */
     public function __destruct()
@@ -181,6 +214,7 @@ class Row
     }
 
     /**
+     * @internal
      * @return void
      */
     public function __destruct()
@@ -191,7 +225,7 @@ class Row
     /**
      * Transform a row into a array of values.
      *
-     * @return array<<missing>,string|int|float|null>
+     * @return array<string,string|int|float|null>
      */
     public function toArray(): array
     {
@@ -269,6 +303,7 @@ class Rows
     }
 
     /**
+     * @internal
      * @return void
      */
     public function __destruct()
@@ -332,9 +367,24 @@ class Rows
 
 class Transaction
 {
+    use Prepareable;
+
     /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
+    }
+
+    /**
+     * Execute batch statements.
+     *
+     * @param string $sql
+     *
+     * @return void 
+     */
+    public function execute_batch(string $sql): void
+    {
+        $batch = $this->ffi->libsql_transaction_batch($this->inner, $sql);
+        errIf($batch->err, $this->ffi);
     }
 
     /**
@@ -344,38 +394,13 @@ class Transaction
      *
      * @return Statement
      */
+    #[\Override]
     public function prepare(string $sql): Statement
     {
         $stmt = $this->ffi->libsql_transaction_prepare($this->inner, $sql);
         errIf($stmt->err, $this->ffi);
 
         return new Statement($stmt, $this->ffi);
-    }
-
-    /**
-     * Query with parameters in a transaction.
-     *
-     * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
-     *
-     * @return Rows
-     */
-    public function query(string $sql, array $params = []): Rows
-    {
-        return $this->prepare($sql)->bind($params)->query();
-    }
-
-    /**
-     * Execute with parameters in a transaction.
-     *
-     * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
-     *
-     * @return int Rows changed
-     */
-    public function execute(string $sql, array $params = []): int
-    {
-        return $this->prepare($sql)->bind($params)->execute();
     }
 
     /**
@@ -402,17 +427,33 @@ class Transaction
 
 class Connection
 {
+    use Prepareable;
+
     /** @internal */
     public function __construct(protected FFI\CData $inner, protected FFI $ffi)
     {
     }
 
     /**
+     * @internal
      * @return void
      */
     public function __destruct()
     {
         $this->ffi->libsql_connection_deinit($this->inner);
+    }
+
+    /**
+     * Execute batch statements.
+     *
+     * @param string $sql
+     *
+     * @return void 
+     */
+    public function execute_batch(string $sql): void
+    {
+        $batch = $this->ffi->libsql_connection_batch($this->inner, $sql);
+        errIf($batch->err, $this->ffi);
     }
 
     /**
@@ -422,6 +463,7 @@ class Connection
      *
      * @return Statement
      */
+    #[\Override]
     public function prepare(string $sql): Statement
     {
         $stmt = $this->ffi->libsql_connection_prepare($this->inner, $sql);
@@ -442,32 +484,6 @@ class Connection
 
         return new Transaction($tx, $this->ffi);
     }
-
-    /**
-     * Query with parameters.
-     *
-     * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
-     *
-     * @return Rows
-     */
-    public function query(string $sql, array $params = []): Rows
-    {
-        return $this->prepare($sql)->bind($params)->query();
-    }
-
-    /**
-     * Execute with parameters.
-     *
-     * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
-     *
-     * @return int Rows changed
-     */
-    public function execute(string $sql, array $params = []): int
-    {
-        return $this->prepare($sql)->bind($params)->execute();
-    }
 }
 
 class Database
@@ -478,6 +494,7 @@ class Database
     }
 
     /**
+     * @internal
      * @return void
      */
     public function __destruct()
