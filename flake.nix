@@ -26,7 +26,7 @@
             buildInputs = [
               php.packages.composer
               php
-            ];
+            ] ++ lib.optionals stdenv.isDarwin [ iconv ];
           };
       });
 }
