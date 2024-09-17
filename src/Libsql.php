@@ -152,67 +152,44 @@ class Statement
     public function bind(array $params): Statement
     {
         foreach ($params as $key => $value) {
-            switch (gettype($key)) {
-                case 'integer':
-                    switch (gettype($value)) {
-                        case 'NULL':
-                            $value = $this->ffi->new("libsql_value_t");
-                            $value->type = $this->ffi->LIBSQL_TYPE_NULL;
+            switch (gettype($value)) {
+                case 'NULL':
+                    $value = $this->ffi->new("libsql_value_t");
+                    $value->type = $this->ffi->LIBSQL_TYPE_NULL;
 
-                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'integer':
-                            $value = $this->ffi->libsql_integer($value);
-                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'double':
-                            $value = $this->ffi->libsql_real($value);
-                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'string':
-                            $cValue = new CharStar($value, $this->ffi);
-                            $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
-                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
-                            try {
-                                errIf($bind->err, $this->ffi);
-                            } finally {
-                                $cValue->destroy();
-                            }
-                            break;
-                    }
+                    $bind = match (gettype($key)) {
+                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                    };
+                    errIf($bind->err, $this->ffi);
+                    break;
+                case 'integer':
+                    $value = $this->ffi->libsql_integer($value);
+                    $bind = match (gettype($key)) {
+                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                    };
+                    errIf($bind->err, $this->ffi);
+                    break;
+                case 'double':
+                    $value = $this->ffi->libsql_real($value);
+                    $bind = match (gettype($key)) {
+                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                    };
+                    errIf($bind->err, $this->ffi);
                     break;
                 case 'string':
-                    switch (gettype($value)) {
-                        case 'NULL':
-                            $value = $this->ffi->new("libsql_value_t");
-                            $value->type = $this->ffi->LIBSQL_TYPE_NULL;
-
-                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'integer':
-                            $value = $this->ffi->libsql_integer($value);
-                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'double':
-                            $value = $this->ffi->libsql_real($value);
-                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            errIf($bind->err, $this->ffi);
-                            break;
-                        case 'string':
-                            $cValue = new CharStar($value, $this->ffi);
-                            $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
-                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
-                            try {
-                                errIf($bind->err, $this->ffi);
-                            } finally {
-                                $cValue->destroy();
-                            }
-                            break;
+                    $cValue = new CharStar($value, $this->ffi);
+                    $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
+                    $bind = match (gettype($key)) {
+                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                    };
+                    try {
+                        errIf($bind->err, $this->ffi);
+                    } finally {
+                        $cValue->destroy();
                     }
                     break;
             }
