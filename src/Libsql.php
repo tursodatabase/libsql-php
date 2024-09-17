@@ -9,6 +9,8 @@ if (!extension_loaded('ffi')) {
 }
 
 use FFI;
+use FFI\CData;
+
 use Exception as Exception;
 
 /** @internal */
@@ -22,7 +24,7 @@ function errIf(?FFI\CData $err, FFI $ffi)
 }
 
 /** @internal */
-function sliceIntoString(FFI\CData $value, FFI $ffi): string
+function sliceIntoString(CData $value, FFI $ffi): string
 {
     switch ($value->type) {
         case $ffi->LIBSQL_TYPE_TEXT:
@@ -69,7 +71,7 @@ trait Prepareable {
 /** @internal */
 class CharStar
 {
-    public FFI\CData $ptr;
+    public CData $ptr;
     public int $len;
 
     /** Allocate a char pointer from the contents of a string. */
@@ -100,7 +102,7 @@ class CharStar
 class Statement
 {
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -223,7 +225,7 @@ class Statement
 class Row
 {
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -312,7 +314,7 @@ class Row
 class Rows
 {
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -384,7 +386,7 @@ class Transaction
     use Prepareable;
 
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -444,7 +446,7 @@ class Connection
     use Prepareable;
 
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -503,7 +505,7 @@ class Connection
 class Database
 {
     /** @internal */
-    public function __construct(protected FFI\CData $inner, protected FFI $ffi)
+    public function __construct(protected CData $inner, protected FFI $ffi)
     {
     }
 
@@ -536,7 +538,7 @@ class Database
      */
     public function sync(): void
     {
-        $sync = $this->ffi->libsql_sync($this->inner);
+        $sync = $this->ffi->libsql_database_sync($this->inner);
         errIf($sync->err, $this->ffi);
     }
 }
