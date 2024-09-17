@@ -153,6 +153,13 @@ class Statement
             switch (gettype($key)) {
                 case 'integer':
                     switch (gettype($value)) {
+                        case 'NULL':
+                            $value = $this->ffi->new("libsql_value_t");
+                            $value->type = $this->ffi->LIBSQL_TYPE_NULL;
+
+                            $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
+                            errIf($bind->err, $this->ffi);
+                            break;
                         case 'integer':
                             $value = $this->ffi->libsql_integer($value);
                             $bind = $this->ffi->libsql_statement_bind_value($this->inner, $value);
@@ -177,6 +184,13 @@ class Statement
                     break;
                 case 'string':
                     switch (gettype($value)) {
+                        case 'NULL':
+                            $value = $this->ffi->new("libsql_value_t");
+                            $value->type = $this->ffi->LIBSQL_TYPE_NULL;
+
+                            $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);
+                            errIf($bind->err, $this->ffi);
+                            break;
                         case 'integer':
                             $value = $this->ffi->libsql_integer($value);
                             $bind = $this->ffi->libsql_statement_bind_named($this->inner, $key, $value);

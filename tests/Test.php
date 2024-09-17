@@ -69,4 +69,29 @@ final class Test extends TestCase
             $i++;
         }
     }
+
+    public function testNull(): void
+    {
+        $libsql = new Libsql();
+        $db = $libsql->openLocal(path: ":memory:");
+        $conn = $db->connect();
+
+        $rows = $conn->query('select ?, ?', [1, null]);
+        $row = $rows->next();
+
+        $this->assertSame(1, $row->get(0));
+        $this->assertSame(null, $row->get(1));
+
+        $rows = $conn->query('select :a, :b', [":a" => 1, ":b" => null]);
+        $row = $rows->next();
+
+        $this->assertSame(1, $row->get(0));
+        $this->assertSame(null, $row->get(1));
+
+        $rows = $conn->query('select :a, :b', [":a" => null, ":b" => null]);
+        $row = $rows->next();
+
+        $this->assertSame(null, $row->get(0));
+        $this->assertSame(null, $row->get(1));
+    }
 }
