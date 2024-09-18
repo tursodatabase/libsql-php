@@ -105,7 +105,10 @@ class Statement
                 }
             } elseif ($value instanceof Blob) {
                 $cValue = new CharBox($value->blob);
-                $value = $ffi->libsql_blob($ffi->cast("uint8_t *", $ffi::addr($cValue->ptr)), $cValue->len - 1);
+                $value = $ffi->libsql_blob(
+                    $ffi->cast("uint8_t *", $ffi::addr($cValue->ptr)),
+                    $cValue->len - 1,
+                );
 
                 $bind = match (gettype($key)) {
                     'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
@@ -125,4 +128,3 @@ class Statement
         return $this;
     }
 }
-

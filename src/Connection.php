@@ -66,4 +66,3 @@ class Connection
         return new Transaction($tx);
     }
 }
-

@@ -7,4 +7,8 @@ $finder = PhpCsFixer\Finder::create()
     ->exclude('bootstrap/cache');
 
 return (new PhpCsFixer\Config())
+    ->setRules([
+        '@PSR12' => true,
+        'array_syntax' => ['syntax' => 'short'],
+    ])
     ->setFinder($finder);

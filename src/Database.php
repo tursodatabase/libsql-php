@@ -56,11 +56,17 @@ function valueToString(CData $value): string
 
     switch ($value->type) {
         case $ffi->LIBSQL_TYPE_TEXT:
-            $text = FFI::string($value->value->text->ptr, $value->value->text->len - 1);
+            $text = FFI::string(
+                $value->value->text->ptr,
+                $value->value->text->len - 1,
+            );
             $ffi->libsql_slice_deinit($value->value->text);
             return $text;
         case $ffi->LIBSQL_TYPE_BLOB:
-            $blob = FFI::string($value->value->blob->ptr, $value->value->blob->len);
+            $blob = FFI::string(
+                $value->value->blob->ptr,
+                $value->value->blob->len,
+            );
             $ffi->libsql_slice_deinit($value->value->blob);
             return $blob;
     }
@@ -94,16 +100,18 @@ class Database
     ) {
         $ffi = getFFI();
 
-        $cPath = new CharBox($path);
-        $cUrl = new CharBox($url);
-        $cAuthToken = new CharBox($authToken);
-        $cEncryptionKey = new CharBox($encryptionKey);
+        $boxed = [
+            'path' => new CharBox($path),
+            'url' => new CharBox($url),
+            'authToken' => new CharBox($authToken),
+            'encryptionKey' => new CharBox($encryptionKey),
+        ];
 
         $desc = $ffi->new('libsql_database_desc_t');
-        $desc->path = $cPath->ptr;
-        $desc->url = $cUrl->ptr;
-        $desc->auth_token = $cAuthToken->ptr;
-        $desc->encryption_key = $cEncryptionKey->ptr;
+        $desc->path = $boxed['path']->ptr;
+        $desc->url = $boxed['url']->ptr;
+        $desc->auth_token = $boxed['authToken']->ptr;
+        $desc->encryption_key = $boxed['encryptionKey']->ptr;
         $desc->webpki = $webpki;
         $desc->not_read_your_writes = !$readYourWrites;
 
@@ -112,10 +120,9 @@ class Database
         try {
             errIf($db->err);
         } finally {
-            $cPath->destroy();
-            $cUrl->destroy();
-            $cAuthToken->destroy();
-            $cEncryptionKey->destroy();
+            foreach ($boxed as $box) {
+                $box->destroy();
+            }
         }
 
         $this->inner = $db;
@@ -123,6 +130,7 @@ class Database
 
     /**
      * @internal
+     *
      * @return void
      */
     public function __destruct()

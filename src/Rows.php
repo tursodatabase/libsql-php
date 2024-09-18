@@ -70,9 +70,10 @@ class Rows
         $row = $ffi->libsql_rows_next($this->inner);
         errIf($row->err);
 
-        if ($ffi->libsql_row_empty($row)) return null;
+        if ($ffi->libsql_row_empty($row)) {
+            return null;
+        }
 
         return new Row($row);
     }
 }
-

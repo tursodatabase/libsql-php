@@ -34,4 +34,3 @@ trait Prepareable
         return $this->prepare($sql)->bind($params)->execute();
     }
 }
-

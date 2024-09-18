@@ -64,7 +64,9 @@ class Row
         $ffi = getFFI();
         $nameSlice = $ffi->libsql_row_name($this->inner, $index);
 
-        if ($ffi::isNull($nameSlice->ptr)) return null;
+        if ($ffi::isNull($nameSlice->ptr)) {
+            return null;
+        }
 
         $name = $ffi::string($nameSlice->ptr, $nameSlice->len - 1);
         $ffi->libsql_slice_deinit($nameSlice);
@@ -95,4 +97,3 @@ class Row
     }
 
 }
-
