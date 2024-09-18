@@ -6,6 +6,7 @@ namespace Libsql\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Libsql\Database;
+use Libsql\Blob;
 
 final class Test extends TestCase
 {
@@ -118,5 +119,14 @@ final class Test extends TestCase
             $this->assertSame($row->get(1), exp($i / 10));
             $this->assertSame($row->get(2), strval(exp($i / 10)));
         }
+    }
+
+    public function testBlob(): void
+    {
+        $db = new Database();
+        $conn = $db->connect();
+
+        $result = $conn->query('select ?', [new Blob("\0\1\2")])->fetchArray();
+        $this->assertEquals("\0\1\2", $result[0]["?"]);
     }
 }
