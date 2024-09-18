@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Libsql\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Libsql\Libsql;
+use Libsql\Database;
 
 final class Test extends TestCase
 {
     public function testSelect1(): void
     {
-        $libsql = new Libsql();
-        $db = $libsql->openLocal(path: ":memory:");
+        $db = new Database();
         $conn = $db->connect();
 
         $this->assertSame($conn->query('select 1')->next()->get(0), 1);
@@ -20,8 +19,7 @@ final class Test extends TestCase
 
     public function testBatch(): void
     {
-        $libsql = new Libsql();
-        $db = $libsql->openLocal(path: ":memory:");
+        $db = new Database();
         $conn = $db->connect();
 
         $conn->execute_batch("
@@ -41,8 +39,7 @@ final class Test extends TestCase
 
     public function testSelectAll(): void
     {
-        $libsql = new Libsql();
-        $db = $libsql->openLocal(path: ":memory:");
+        $db = new Database();
         $conn = $db->connect();
 
         $conn->execute('create table test (i integer, r real, t text)');
@@ -70,8 +67,7 @@ final class Test extends TestCase
 
     public function testNull(): void
     {
-        $libsql = new Libsql();
-        $db = $libsql->openLocal(path: ":memory:");
+        $db = new Database();
         $conn = $db->connect();
 
         $rows = $conn->query('select ?, ?', [1, null]);
@@ -95,11 +91,10 @@ final class Test extends TestCase
 
     public function testEmbeddedReplica(): void
     {
-        $libsql = new Libsql();
-        $db = $libsql->openEmbeddedReplica(
-            path: "test.db",
+        $db = new Database(
+            path: 'test.db',
             url: getenv('TURSO_URL'),
-            authToken: getenv("TURSO_AUTH_TOKEN"),
+            authToken: getenv('TURSO_AUTH_TOKEN')
         );
         $conn = $db->connect();
 
