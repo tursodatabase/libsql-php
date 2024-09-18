@@ -10,8 +10,8 @@ if (!extension_loaded('ffi')) {
 
 use FFI;
 use FFI\CData;
-
 use Exception as Exception;
+use InvalidArgumentException;
 
 /** @internal */
 function errIf(?FFI\CData $err, FFI $ffi)
@@ -38,7 +38,8 @@ function sliceIntoString(CData $value, FFI $ffi): string
     }
 }
 
-trait Prepareable {
+trait Prepareable
+{
     abstract public function prepare(string $sql): Statement;
 
     /**
@@ -99,6 +100,14 @@ class CharStar
     }
 }
 
+/** @internal */
+class Blob
+{
+    public function __construct(public ?string $blob)
+    {
+    }
+}
+
 class Statement
 {
     /** @internal */
@@ -152,46 +161,62 @@ class Statement
     public function bind(array $params): Statement
     {
         foreach ($params as $key => $value) {
-            switch (gettype($value)) {
-                case 'NULL':
-                    $value = $this->ffi->new("libsql_value_t");
-                    $value->type = $this->ffi->LIBSQL_TYPE_NULL;
+            if (is_null($value)) {
+                $value = $this->ffi->new("libsql_value_t");
+                $value->type = $this->ffi->LIBSQL_TYPE_NULL;
 
-                    $bind = match (gettype($key)) {
-                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
-                    };
+                $bind = match (gettype($key)) {
+                    'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                    'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                };
+
+                errIf($bind->err, $this->ffi);
+            } elseif (is_int($value)) {
+                $value = $this->ffi->libsql_integer($value);
+
+                $bind = match (gettype($key)) {
+                    'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                    'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                };
+                errIf($bind->err, $this->ffi);
+            } elseif (is_double($value)) {
+                $value = $this->ffi->libsql_real($value);
+
+                $bind = match (gettype($key)) {
+                    'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                    'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                };
+                errIf($bind->err, $this->ffi);
+            } elseif (is_string($value)) {
+                $cValue = new CharStar($value, $this->ffi);
+                $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
+
+                $bind = match (gettype($key)) {
+                    'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                    'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                };
+
+                try {
                     errIf($bind->err, $this->ffi);
-                    break;
-                case 'integer':
-                    $value = $this->ffi->libsql_integer($value);
-                    $bind = match (gettype($key)) {
-                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
-                    };
+                } finally {
+                    $cValue->destroy();
+                }
+            } elseif ($value instanceof Blob) {
+                $cValue = new CharStar($value->blob, $this->ffi);
+                $value = $this->ffi->libsql_blob($cValue->ptr, $cValue->len);
+
+                $bind = match (gettype($key)) {
+                    'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                    'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
+                };
+
+                try {
                     errIf($bind->err, $this->ffi);
-                    break;
-                case 'double':
-                    $value = $this->ffi->libsql_real($value);
-                    $bind = match (gettype($key)) {
-                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
-                    };
-                    errIf($bind->err, $this->ffi);
-                    break;
-                case 'string':
-                    $cValue = new CharStar($value, $this->ffi);
-                    $value = $this->ffi->libsql_text($cValue->ptr, $cValue->len);
-                    $bind = match (gettype($key)) {
-                        'string' => $this->ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                        'integer' => $this->ffi->libsql_statement_bind_value($this->inner, $value),
-                    };
-                    try {
-                        errIf($bind->err, $this->ffi);
-                    } finally {
-                        $cValue->destroy();
-                    }
-                    break;
+                } finally {
+                    $cValue->destroy();
+                }
+            } else {
+                throw new InvalidArgumentException();
             }
         }
 
@@ -255,9 +280,7 @@ class Row
     {
         $nameSlice = $this->ffi->libsql_row_name($this->inner, $index);
 
-        if (FFI::isNull($nameSlice->ptr)) {
-            return null;
-        }
+        if (FFI::isNull($nameSlice->ptr)) return null;
 
         $name = FFI::string($nameSlice->ptr, $nameSlice->len - 1);
         $this->ffi->libsql_slice_deinit($nameSlice);
@@ -274,14 +297,14 @@ class Row
      */
     public function get(int $index): string|int|float|null
     {
-        $value = $this->ffi->libsql_row_value($this->inner, $index);
-        errIf($value->err, $this->ffi);
+        $result = $this->ffi->libsql_row_value($this->inner, $index);
+        errIf($result->err, $this->ffi);
 
-        return match ($value->ok->type) {
-            $this->ffi->LIBSQL_TYPE_INTEGER => $value->ok->value->integer,
-            $this->ffi->LIBSQL_TYPE_REAL => $value->ok->value->real,
-            $this->ffi->LIBSQL_TYPE_TEXT => sliceIntoString($value->ok, $this->ffi),
-            $this->ffi->LIBSQL_TYPE_BLOB => sliceIntoString($value->ok, $this->ffi),
+        return match ($result->ok->type) {
+            $this->ffi->LIBSQL_TYPE_INTEGER => $result->ok->value->integer,
+            $this->ffi->LIBSQL_TYPE_REAL => $result->ok->value->real,
+            $this->ffi->LIBSQL_TYPE_TEXT => sliceIntoString($result->ok, $this->ffi),
+            $this->ffi->LIBSQL_TYPE_BLOB => sliceIntoString($result->ok, $this->ffi),
             $this->ffi->LIBSQL_TYPE_NULL => null,
         };
     }
@@ -350,9 +373,7 @@ class Rows
         $row = $this->ffi->libsql_rows_next($this->inner);
         errIf($row->err, $this->ffi);
 
-        if ($this->ffi->libsql_row_empty($row)) {
-            return null;
-        }
+        if ($this->ffi->libsql_row_empty($row)) return null;
 
         return new Row($row, $this->ffi);
     }
@@ -372,7 +393,7 @@ class Transaction
      *
      * @param string $sql
      *
-     * @return void 
+     * @return void
      */
     public function execute_batch(string $sql): void
     {
@@ -441,7 +462,7 @@ class Connection
      *
      * @param string $sql
      *
-     * @return void 
+     * @return void
      */
     public function execute_batch(string $sql): void
     {
@@ -555,10 +576,10 @@ class Libsql
      * @return Database
      */
     public function openEmbeddedReplica(
-        ?string $path = null,
-        ?string $url = null,
+        string $path,
+        string $url,
         #[\SensitiveParameter]
-        ?string $authToken = null,
+        string $authToken,
         #[\SensitiveParameter]
         ?string $encryptionKey = null,
         int $syncInterval = 0,
@@ -574,7 +595,7 @@ class Libsql
         $desc->path = $cPath->ptr;
         $desc->url = $cUrl->ptr;
         $desc->auth_token = $cAuthToken->ptr;
-        $desc->encryption_key = $encryptionKey->ptr;
+        $desc->encryption_key = $cEncryptionKey->ptr;
         $desc->webpki = $webpki;
         $desc->not_read_your_writes = !$readYourWrites;
 
@@ -602,9 +623,9 @@ class Libsql
      * @return Database
      */
     public function openRemote(
-        ?string $url = null,
+        string $url,
         #[\SensitiveParameter]
-        ?string $authToken = null,
+        string $authToken,
         #[\SensitiveParameter]
         bool $webpki = false,
     ): Database {

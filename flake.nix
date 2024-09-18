@@ -26,6 +26,7 @@
             buildInputs = [
               php.packages.composer
               php
+              turso-cli
             ] ++ lib.optionals stdenv.isDarwin [ iconv ];
           };
       });

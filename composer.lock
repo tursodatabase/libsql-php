@@ -1083,12 +1083,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "d5e986f5687a20f1aa80afcb8dd3ef61e2b489ca"
+                "reference": "ee2a7c66e5c7bc51d348daecaed5e2d35fe3857e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/d5e986f5687a20f1aa80afcb8dd3ef61e2b489ca",
-                "reference": "d5e986f5687a20f1aa80afcb8dd3ef61e2b489ca",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/ee2a7c66e5c7bc51d348daecaed5e2d35fe3857e",
+                "reference": "ee2a7c66e5c7bc51d348daecaed5e2d35fe3857e",
                 "shasum": ""
             },
             "require": {
@@ -1176,7 +1176,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-17T13:15:01+00:00"
+            "time": "2024-09-18T11:33:56+00:00"
         },
         {
             "name": "psr/container",
@@ -2701,12 +2701,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/type.git",
-                "reference": "461b9c5da241511a2a0e8f240814fb23ce5c0aac"
+                "reference": "21b95e1a38c2dc7cc1ba48b3fb9e7373d6e8a3bf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/type/zipball/461b9c5da241511a2a0e8f240814fb23ce5c0aac",
-                "reference": "461b9c5da241511a2a0e8f240814fb23ce5c0aac",
+                "url": "https://api.github.com/repos/sebastianbergmann/type/zipball/21b95e1a38c2dc7cc1ba48b3fb9e7373d6e8a3bf",
+                "reference": "21b95e1a38c2dc7cc1ba48b3fb9e7373d6e8a3bf",
                 "shasum": ""
             },
             "require": {
@@ -2743,7 +2743,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/type/issues",
                 "security": "https://github.com/sebastianbergmann/type/security/policy",
-                "source": "https://github.com/sebastianbergmann/type/tree/5.1.0"
+                "source": "https://github.com/sebastianbergmann/type/tree/main"
             },
             "funding": [
                 {
@@ -2751,7 +2751,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-09-17T13:12:04+00:00"
+            "time": "2024-09-18T06:14:37+00:00"
         },
         {
             "name": "sebastian/version",

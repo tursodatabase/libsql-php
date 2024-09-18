@@ -49,7 +49,7 @@ final class Test extends TestCase
 
         $max = 100;
 
-        for ($i = 0; $i < $max; $i++) {
+        foreach (range(0, $max - 1) as $i) {
             $stmt = $conn->prepare('insert into test values (:a, :b, :c)');
             $stmt->bind([
                 ":a" => $i,
@@ -61,12 +61,10 @@ final class Test extends TestCase
 
         $rows = $conn->query('select * from test');
 
-        $i = 0;
-        foreach ($rows->iterator() as $row) {
+        foreach ($rows->iterator() as $i => $row) {
             $this->assertSame($row->get(0), $i);
             $this->assertSame($row->get(1), exp($i / 10));
             $this->assertSame($row->get(2), strval(exp($i / 10)));
-            $i++;
         }
     }
 
@@ -93,5 +91,37 @@ final class Test extends TestCase
 
         $this->assertSame(null, $row->get(0));
         $this->assertSame(null, $row->get(1));
+    }
+
+    public function testEmbeddedReplica(): void
+    {
+        $libsql = new Libsql();
+        $db = $libsql->openEmbeddedReplica(
+            path: "test.db",
+            url: getenv('TURSO_URL'),
+            authToken: getenv("TURSO_AUTH_TOKEN"),
+        );
+        $conn = $db->connect();
+
+        $conn->execute('drop table if exists test');
+        $conn->execute('create table test (i integer, r real, t text)');
+
+        $max = 20;
+
+        foreach (range(0, $max - 1) as $i) {
+            $stmt = $conn->prepare('insert into test values (:a, :b, :c)');
+            $stmt->bind([
+                ":a" => $i,
+                ":b" => exp($i / 10),
+                ":c" => strval(exp($i / 10))
+            ]);
+            $stmt->execute();
+        }
+
+        foreach ($conn->query('select * from test')->iterator() as $i => $row) {
+            $this->assertSame($row->get(0), $i);
+            $this->assertSame($row->get(1), exp($i / 10));
+            $this->assertSame($row->get(2), strval(exp($i / 10)));
+        }
     }
 }
