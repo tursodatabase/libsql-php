@@ -10,7 +10,6 @@ if (!extension_loaded('ffi')) {
 
 use FFI;
 use FFI\CData;
-use Exception;
 
 /** @internal */
 function getFFI(): ?FFI
@@ -27,8 +26,8 @@ function getFFI(): ?FFI
             __DIR__ . match ([$os, $arch]) {
                 ["Darwin", "arm64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
                 ["Darwin", "x86_64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
-                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
-                ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
+                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-musl/liblibsql.so',
+                ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-musl/liblibsql.so',
                 default => die("Unsupported OS $os $arch"),
             },
         );
@@ -45,7 +44,7 @@ function errIf(?CData $err)
     if ($err != null) {
         $message = $ffi->libsql_error_message($err);
         $ffi->libsql_error_deinit($err);
-        throw new Exception($message);
+        throw new LibsqlException($message);
     }
 }
 
@@ -83,7 +82,7 @@ class Database
      * @param ?string $url Url of the primary (default: null)
      * @param ?string $authToken Auth token (default: null)
      * @param ?string $encryptionKey Key used to de/encrypt the database (default: null)
-     * @param int $syncInterval Interval used to sync frames periodicaly with primary (default: 0, i.e.: only sync manually)
+     * @param int $syncInterval Interval used to sync frames periodicaly with primary (default: 0, sync manually)
      * @param bool $readYourWrites Make writes visible within a sync period (default: true)
      * @param bool $webpki Use Webpki (default: false)
      */

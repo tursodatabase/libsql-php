@@ -57,9 +57,7 @@ final class Test extends TestCase
             $stmt->execute();
         }
 
-        $rows = $conn->query('select * from test');
-
-        foreach ($rows->iterator() as $i => $row) {
+        foreach ($conn->query('select * from test') as $i => $row) {
             $this->assertSame($row->get(0), $i);
             $this->assertSame($row->get(1), exp($i / 10));
             $this->assertSame($row->get(2), strval(exp($i / 10)));
@@ -114,10 +112,10 @@ final class Test extends TestCase
             $stmt->execute();
         }
 
-        foreach ($conn->query('select * from test')->iterator() as $i => $row) {
-            $this->assertSame($row->get(0), $i);
-            $this->assertSame($row->get(1), exp($i / 10));
-            $this->assertSame($row->get(2), strval(exp($i / 10)));
+        foreach ($conn->query('select * from test') as $i => $row) {
+            $this->assertSame($row->i, $i);
+            $this->assertSame($row->r, exp($i / 10));
+            $this->assertSame($row->t, strval(exp($i / 10)));
         }
     }
 
@@ -127,6 +125,6 @@ final class Test extends TestCase
         $conn = $db->connect();
 
         $result = $conn->query('select ?', [new Blob("\0\1\2")])->fetchArray();
-        $this->assertEquals("\0\1\2", $result[0]["?"]);
+        $this->assertEquals(new Blob("\0\1\2"), $result[0]["?"]);
     }
 }

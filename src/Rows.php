@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace Libsql;
 
 use FFI\CData;
+use IteratorAggregate;
+use JsonSerializable;
+use Stringable;
+use Traversable;
 
-class Rows
+/**
+ * @implements IteratorAggregate<int,mixed>
+ */
+class Rows implements IteratorAggregate, JsonSerializable, Stringable
 {
     /** @internal */
     public function __construct(protected CData $inner)
@@ -31,11 +38,9 @@ class Rows
     public function fetchArray(): array
     {
         $result = [];
-        $i = 0;
 
-        foreach ($this->iterator() as $row) {
+        foreach ($this as $i => $row) {
             $result[$i] = $row->toArray();
-            $i++;
         }
 
         return $result;
@@ -44,9 +49,10 @@ class Rows
     /**
      * Iterator over rows.
      *
-     * @return Generator<Row>
+     * @return Traversable<Row>
      */
-    public function iterator(): iterable
+    #[\Override]
+    public function getIterator(): Traversable
     {
         while (true) {
             $row = $this->next();
@@ -57,6 +63,17 @@ class Rows
                 return;
             }
         }
+    }
+
+    #[\Override]
+    public function jsonSerialize(): mixed {
+        return $this->fetchArray();
+    }
+
+    #[\Override]
+    public function __toString(): string
+    {
+        return json_encode($this);
     }
 
     /**
