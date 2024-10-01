@@ -11,7 +11,7 @@ use Stringable;
 use Traversable;
 
 /**
- * @implements IteratorAggregate<int,mixed>
+ * @implements IteratorAggregate<int,Row>
  */
 class Rows implements IteratorAggregate, JsonSerializable, Stringable
 {
