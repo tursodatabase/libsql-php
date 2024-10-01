@@ -26,12 +26,6 @@
     "scripts": {
         "test": [ "@php vendor/bin/phpunit tests --fail-on-warning --fail-on-deprecation" ]
     },
-    "extra": {
-        "files": [
-            "lib/universal2-apple-darwin/liblibsql.dylib",
-            "lib/x86_64-unknown-linux-gnu/liblibsql.so"
-        ]
-    },
     "minimum-stability": "dev",
     "license": "MIT"
 }
