@@ -31,7 +31,7 @@ class Connection
      *
      * @return void
      */
-    public function execute_batch(string $sql): void
+    public function executeBatch(string $sql): void
     {
         $batch = getFFI()->libsql_connection_batch($this->inner, $sql);
         errIf($batch->err);
