@@ -93,7 +93,8 @@ final class Test extends TestCase
         $db = new Database(
             path: 'test.db',
             url: getenv('TURSO_URL'),
-            authToken: getenv('TURSO_AUTH_TOKEN')
+            authToken: getenv('TURSO_AUTH_TOKEN'),
+            syncInterval: 100,
         );
         $conn = $db->connect();
 
@@ -126,5 +127,26 @@ final class Test extends TestCase
 
         $result = $conn->query('select ?', [new Blob("\0\1\2")])->fetchArray();
         $this->assertEquals(new Blob("\0\1\2"), $result[0]["?"]);
+    }
+
+    public function testTransactions(): void
+    {
+        $db = new Database(
+            path: 'test.db',
+            url: getenv('TURSO_URL'),
+            authToken: getenv('TURSO_AUTH_TOKEN'),
+            syncInterval: 100,
+        );
+        $conn = $db->connect();
+
+        $conn->execute('create table if not exists test_transaction(i integer)');
+
+        $tx = $conn->transaction();
+        $tx->execute('insert into test_transaction values (?)', [1]);
+        $tx->execute('insert into test_transaction values (?)', [2]);
+        $tx->execute('insert into test_transaction values (?)', [3]);
+        $tx->rollback();
+
+        $this->assertEquals($conn->query('select * from test_transaction')->next(), null);
     }
 }

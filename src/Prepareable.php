@@ -12,7 +12,7 @@ trait Prepareable
      * Query with parameters.
      *
      * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
+     * @param array<int,mixed>|array<string,mixed> $params (default: [])
      *
      * @return Rows
      */
@@ -25,7 +25,7 @@ trait Prepareable
      * Execute with parameters.
      *
      * @param string $sql
-     * @param array<int,mixed>|array<string,mixed> $params
+     * @param array<int,mixed>|array<string,mixed> $params (default: [])
      *
      * @return int Rows changed
      */
