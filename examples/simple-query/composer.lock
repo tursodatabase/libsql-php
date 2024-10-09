@@ -1,0 +1,66 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "0468cbe6e9d006666ea995b0f0ec0748",
+    "packages": [
+        {
+            "name": "turso/libsql",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "../..",
+                "reference": "1a99c720f60b244e91844be4f4f981c6c057171a"
+            },
+            "require": {
+                "ext-ffi": "*",
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.64",
+                "phpunit/phpunit": "^11"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "src/"
+                ],
+                "psr-4": {
+                    "Libsql\\": "src/",
+                    "Libsql\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "@php vendor/bin/phpunit tests --fail-on-warning --fail-on-deprecation"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Levy A.",
+                    "email": "levyddsa@gmail.com"
+                }
+            ],
+            "description": "libSQL bindings for PHP",
+            "transport-options": {
+                "relative": true
+            }
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "turso/libsql": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
+}

@@ -1,0 +1,11 @@
+{
+  "require": {
+    "turso/libsql": "@dev"
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../../"
+    }
+  ]
+}
