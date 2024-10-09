@@ -28,22 +28,26 @@
   </a>
   <a href="#contributors">
     <picture>
-      <img src="https://img.shields.io/github/contributors/notrab/dumbo?color=0F624B" alt="Contributors" />
+      <img src="https://img.shields.io/github/contributors/tursodatabase/libsql-php?color=0F624B" alt="Contributors" />
     </picture>
   </a>
-  <a href="">
-    <img src="https://img.shields.io/packagist/dt/turso/libsql?color=0F624B" alt="Total downloads" />
+  <a href="https://packagist.org/packages/turso/libsql">
+    <picture>
+      <img src="https://img.shields.io/packagist/dt/turso/libsql?color=0F624B" alt="Total downloads" />
+    </picture>
   </a>
   <a href="/examples">
-    <img src="https://img.shields.io/badge/browse-examples-0F624B" alt="Examples" />
+    <picture>
+      <img src="https://img.shields.io/badge/browse-examples-0F624B" alt="Examples" />
+    </picture>
   </a>
 </p>
 
 ## Features
 
-- 🔌 Works offline with Embedded Replicas
+- 🔌 Works offline with [Embedded Replicas](https://docs.turso.tech/features/embedded-replicas/introduction)
 - 🌎 Works with remote Turso databases
-- ✨ Works with Turso AI & Vector Search
+- ✨ Works with Turso [AI & Vector Search](https://docs.turso.tech/features/ai-and-embeddings)
 - 🐘 Works PHP PDO
 
 ## Install
@@ -85,7 +89,7 @@ $db->query("SELECT * FROM users WHERE id = ?", [1])->fetchArray();
 
 ## Documentation
 
-Visit our [official documentation](https://docs.turso.tech/sdk/php).
+Visit our [official documentation](https://docs.turso.tech/sdk/php). Security related bugs can be [reported via email](mailto:security@turso.tech).
 
 ## Support
 
