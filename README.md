@@ -54,6 +54,9 @@
 - ✨ Works with Turso [AI & Vector Search](https://docs.turso.tech/features/ai-and-embeddings)
 - 🐘 Works PHP PDO
 
+> [!WARNING]
+> This SDK is currently in technical preview. <a href="https://tur.so/discord-php">Join us in Discord</a> to report any issues.
+
 ## Install
 
 ```bash
@@ -86,9 +89,9 @@ $createUsers = "
   INSERT INTO users (name) VALUES ('Iku');
 ";
 
-$db->executeBatch($createUsers);
+$conn->executeBatch($createUsers);
 
-$db->query("SELECT * FROM users WHERE id = ?", [1])->fetchArray();
+$conn->query("SELECT * FROM users WHERE id = ?", [1])->fetchArray();
 ```
 
 ## Documentation
