@@ -23,7 +23,7 @@
   </a>
   <a href="https://tur.so/discord-php">
     <picture>
-      <img src="https://img.shields.io/discord/4B5D7hYwub?color=0F624B" alt="Discord" />
+      <img src="https://img.shields.io/discord/933071162680958986?color=0F624B" alt="Discord" />
     </picture>
   </a>
   <a href="#contributors">
@@ -95,14 +95,14 @@ Visit our [official documentation](https://docs.turso.tech/sdk/php).
 
 Join us [on Discord](https://tur.so/discord-php) to get help using this SDK. Report security issues [via email](mailto:security@turso.tech).
 
-## Contributing
+## Contributors
 
-<a href="https://packagist.org/packages/turso/libsql">
+![Contributors](https://contrib.nn.ci/api?repo=tursodatabase/libsql-php)
+
+<a href="/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22">
   <picture>
     <img src="https://img.shields.io/github/issues-search/tursodatabase/libsql-php?label=good%20first%20issue&query=label%3A%22good%20first%20issue%22%20&color=0F624B" alt="good first issue" />
   </picture>
 </a>
-
-![Contributors](https://contrib.nn.ci/api?repo=tursodatabase/libsql-php)
 
 See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
