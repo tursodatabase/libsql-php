@@ -89,10 +89,20 @@ $db->query("SELECT * FROM users WHERE id = ?", [1])->fetchArray();
 
 ## Documentation
 
-Visit our [official documentation](https://docs.turso.tech/sdk/php). Security related bugs can be [reported via email](mailto:security@turso.tech).
+Visit our [official documentation](https://docs.turso.tech/sdk/php).
 
 ## Support
 
-Join us [on Discord](https://tur.so/discord-php) to get help using this SDK.
+Join us [on Discord](https://tur.so/discord-php) to get help using this SDK. Report security issues [via email](mailto:security@turso.tech).
 
 ## Contributing
+
+<a href="https://packagist.org/packages/turso/libsql">
+  <picture>
+    <img src="https://img.shields.io/github/issues-search/tursodatabase/libsql-php?label=good%20first%20issue&query=label%3A%22good%20first%20issue%22%20&color=0F624B" alt="good first issue" />
+  </picture>
+</a>
+
+See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
+
+![Contributors](https://contrib.nn.ci/api?repo=tursodatabase/libsql-php)
