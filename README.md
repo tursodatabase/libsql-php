@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="/.github/cover.png" alt="libSQL PHP" />
+  <a href="https://tur.so/turso-php">
+    <picture>
+      <img src="/.github/cover.png" alt="libSQL PHP" />
+    </picture>
+  </a>
   <h1 align="center">libSQL PHP</h1>
 </p>
 
@@ -8,11 +12,11 @@
 </p>
 
 <p align="center">
-  <a href="https://turso.tech"><strong>Turso</strong></a> ·
+  <a href="https://tur.so/turso-php"><strong>Turso</strong></a> ·
   <a href="https://docs.turso.tech"><strong>Docs</strong></a> ·
   <a href="https://docs.turso.tech/sdk/php/quickstart"><strong>Quickstart</strong></a> ·
   <a href="https://docs.turso.tech/sdk/php/reference"><strong>SDK Reference</strong></a> ·
-  <a href="https://blog.turso.tech/"><strong>Blog &amp; Tutorials</strong></a>
+  <a href="https://turso.tech/blog"><strong>Blog &amp; Tutorials</strong></a>
 </p>
 
 <p align="center">
@@ -97,12 +101,12 @@ Join us [on Discord](https://tur.so/discord-php) to get help using this SDK. Rep
 
 ## Contributors
 
+See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
+
 ![Contributors](https://contrib.nn.ci/api?repo=tursodatabase/libsql-php)
 
-<a href="/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22">
+<a href="https://github.com/tursodatabase/libsql-php/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22">
   <picture>
     <img src="https://img.shields.io/github/issues-search/tursodatabase/libsql-php?label=good%20first%20issue&query=label%3A%22good%20first%20issue%22%20&color=0F624B" alt="good first issue" />
   </picture>
 </a>
-
-See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
