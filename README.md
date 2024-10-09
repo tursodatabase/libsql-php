@@ -70,8 +70,8 @@ The example below uses Embedded Replicas and syncs data every 1000ms from Turso.
 use Libsql\Database;
 
 $db = new Database(
-    path: 'test.db',
-    url: getenv('TURSO_URL'),
+    path: 'local.db',
+    url: getenv('TURSO_DATABASE_URL'),
     authToken: getenv('TURSO_AUTH_TOKEN')
     syncInterval: 1000
 );
