@@ -103,6 +103,6 @@ Join us [on Discord](https://tur.so/discord-php) to get help using this SDK. Rep
   </picture>
 </a>
 
-See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
-
 ![Contributors](https://contrib.nn.ci/api?repo=tursodatabase/libsql-php)
+
+See the [contributing guide](CONTRIBUTING.md) to learn how to get involved.
