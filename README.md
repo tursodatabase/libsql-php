@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./github/cover.png" alt="libSQL PHP" />
+  <img src="/.github/cover.png" alt="libSQL PHP" />
   <h1 align="center">libSQL PHP</h1>
 </p>
 
