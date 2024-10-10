@@ -52,7 +52,6 @@
 - 🔌 Works offline with [Embedded Replicas](https://docs.turso.tech/features/embedded-replicas/introduction)
 - 🌎 Works with remote Turso databases
 - ✨ Works with Turso [AI & Vector Search](https://docs.turso.tech/features/ai-and-embeddings)
-- 🐘 Works PHP PDO
 
 > [!WARNING]
 > This SDK is currently in technical preview. <a href="https://tur.so/discord-php">Join us in Discord</a> to report any issues.
