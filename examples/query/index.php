@@ -4,11 +4,17 @@ require __DIR__ . "/vendor/autoload.php";
 
 use Libsql\Database;
 
-$db = new Database(":memory:");
+$db = new Database(
+    path: 'test.db',
+    url: getenv('TURSO_URL'),
+    authToken: getenv('TURSO_AUTH_TOKEN'),
+    syncInterval: 100,
+);
 $conn = $db->connect();
 
 $conn->executeBatch("
-    create table users(id integer primary key autoincrement, name text);
+    drop table if exists users;
+    create table users (id integer primary key autoincrement, name text);
     insert into users (name) values ('Iku Turso');
 ");
 
