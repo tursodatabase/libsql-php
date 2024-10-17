@@ -7,21 +7,21 @@
 
 typedef struct libsql_error_t libsql_error_t;
 
-typedef enum __attribute__((__packed__)
-) { LIBSQL_CYPHER_DEFAULT = 0,
+typedef enum {
+    LIBSQL_CYPHER_DEFAULT = 0,
     LIBSQL_CYPHER_AES256,
 } libsql_cypher_t;
 
-typedef enum __attribute__((__packed__)
-) { LIBSQL_TYPE_INTEGER = 1,
+typedef enum {
+    LIBSQL_TYPE_INTEGER = 1,
     LIBSQL_TYPE_REAL = 2,
     LIBSQL_TYPE_TEXT = 3,
     LIBSQL_TYPE_BLOB = 4,
     LIBSQL_TYPE_NULL = 5,
 } libsql_type_t;
 
-typedef enum __attribute__((__packed__)
-) { LIBSQL_TRACING_LEVEL_ERROR = 1,
+typedef enum {
+    LIBSQL_TRACING_LEVEL_ERROR = 1,
     LIBSQL_TRACING_LEVEL_WARN,
     LIBSQL_TRACING_LEVEL_INFO,
     LIBSQL_TRACING_LEVEL_DEBUG,
@@ -94,14 +94,14 @@ typedef struct {
 } libsql_value_t;
 
 typedef struct {
-    libsql_value_t ok;
     libsql_error_t *err;
+    libsql_value_t ok;
 } libsql_result_value_t;
 
 typedef struct {
+    libsql_error_t *err;
     uint64_t frame_no;
     uint64_t frames_synced;
-    libsql_error_t *err;
 } libsql_sync_t;
 
 typedef struct {
@@ -109,9 +109,15 @@ typedef struct {
 } libsql_bind_t;
 
 typedef struct {
-    uint64_t rows_changed;
     libsql_error_t *err;
+    uint64_t rows_changed;
 } libsql_execute_t;
+
+typedef struct {
+    libsql_error_t *err;
+    int64_t last_inserted_rowid;
+    uint64_t total_changes;
+} libsql_connection_info_t;
 
 /**
  * Database description.
@@ -130,7 +136,7 @@ typedef struct {
     /** Cypher to be used with `encryption_key` */
     libsql_cypher_t cypher;
     /** If set, disable `read_your_writes`. To mantain consistency. */
-    bool not_read_your_writes;
+    bool disable_read_your_writes;
     /** Enable Webpki connector */
     bool webpki;
 } libsql_database_desc_t;
@@ -161,6 +167,9 @@ libsql_transaction_t libsql_connection_transaction(libsql_connection_t self);
 libsql_batch_t
 libsql_connection_batch(libsql_connection_t self, const char *sql);
 
+/** Send a batch statement in a connection */
+libsql_connection_info_t libsql_connection_info(libsql_connection_t self);
+
 /** Send a batch statement in a transaction */
 libsql_batch_t
 libsql_transaction_batch(libsql_transaction_t self, const char *sql);
@@ -181,6 +190,10 @@ void libsql_statement_reset(libsql_statement_t self);
 
 /** Get the next row from rows */
 libsql_row_t libsql_rows_next(libsql_rows_t self);
+/** Get the column name at the index */
+libsql_slice_t libsql_rows_column_name(libsql_rows_t self, int32_t index);
+/** Get rows column count */
+int32_t libsql_rows_column_length(libsql_rows_t self);
 
 /** Get the value at the the index */
 libsql_result_value_t libsql_row_value(libsql_row_t self, int32_t index);

@@ -26,8 +26,8 @@ function getFFI(): ?FFI
             __DIR__ . match ([$os, $arch]) {
                 ["Darwin", "arm64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
                 ["Darwin", "x86_64"] => '/../lib/universal2-apple-darwin/liblibsql.dylib',
-                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-musl/liblibsql.so',
-                ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-musl/liblibsql.so',
+                ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
+                ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
                 default => die("Unsupported OS $os $arch"),
             },
         );
@@ -112,7 +112,7 @@ class Database
         $desc->auth_token = $boxed['authToken']->ptr;
         $desc->encryption_key = $boxed['encryptionKey']->ptr;
         $desc->webpki = $webpki;
-        $desc->not_read_your_writes = !$readYourWrites;
+        $desc->disable_read_your_writes = !$readYourWrites;
 
         $db = $ffi->libsql_database_init($desc);
 
