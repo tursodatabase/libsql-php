@@ -23,7 +23,7 @@ final class Test extends TestCase
         $db = new Database();
         $conn = $db->connect();
 
-        $conn->execute_batch("
+        $conn->executeBatch("
             create table test (i integer);
             insert into test values (1);
             insert into test values (2);
