@@ -36,6 +36,19 @@ function getFFI(): ?FFI
     return $ffi;
 }
 
+{
+    $ffi = getFFI();
+
+    $version = new CharBox('libsql-php');
+
+    $config = $ffi->new('libsql_config_t');
+    $config->version = $version->ptr;
+
+    $ffi->libsql_setup($config);
+
+    $version->destroy();
+}
+
 /** @internal */
 function errIf(?CData $err)
 {
