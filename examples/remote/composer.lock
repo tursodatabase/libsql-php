@@ -1,0 +1,68 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "05df239a8072a328b1d754c2776e8f03",
+    "packages": [
+        {
+            "name": "turso/libsql",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tursodatabase/libsql-php.git",
+                "reference": "1a99c720f60b244e91844be4f4f981c6c057171a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tursodatabase/libsql-php/zipball/1a99c720f60b244e91844be4f4f981c6c057171a",
+                "reference": "1a99c720f60b244e91844be4f4f981c6c057171a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ffi": "*",
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.64",
+                "phpunit/phpunit": "^11"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Libsql\\": "src/",
+                    "Libsql\\Tests\\": "tests/"
+                },
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Levy A.",
+                    "email": "levyddsa@gmail.com"
+                }
+            ],
+            "description": "libSQL bindings for PHP",
+            "support": {
+                "issues": "https://github.com/tursodatabase/libsql-php/issues",
+                "source": "https://github.com/tursodatabase/libsql-php/tree/v0.1.0"
+            },
+            "time": "2024-10-03T19:33:50+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
+}
