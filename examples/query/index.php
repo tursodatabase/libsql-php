@@ -33,4 +33,3 @@ foreach ($forenames as $forename) {
 foreach ($conn->query("select * from users", [1]) as $row) {
     echo "$row->id $row->name\n";
 }
-

@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace Libsql;
 
-use Exception;
-use FFI\CData;
-use Countable;
-use JsonSerializable;
-use Stringable;
+use ffi\libsql;
+use ffi\libsql_row_t;
 
-class Row implements JsonSerializable, Countable, Stringable
+class Row implements \JsonSerializable, \Countable, \Stringable
 {
-    private $column_names = [];
+    /** @var array<string, int> */
+    private array $columnNames = [];
 
     /** @internal */
-    public function __construct(protected CData $inner)
+    public function __construct(protected libsql_row_t $inner)
     {
-        $names = [];
-        foreach (array_map(fn($i) => $this->name($i), range(0, count($this) - 1)) as $i => $name) {
-            $names[$name] = $i;
+        for ($i = 0; $i < count($this); ++$i) {
+            $this->columnNames[$this->name($i)] = $i;
         }
-        $this->column_names = $names;
     }
 
     /**
@@ -31,7 +27,7 @@ class Row implements JsonSerializable, Countable, Stringable
      */
     public function __destruct()
     {
-        getFFI()->libsql_row_deinit($this->inner);
+        libsqlFFI()->libsql_row_deinit($this->inner);
     }
 
     /**
@@ -43,7 +39,7 @@ class Row implements JsonSerializable, Countable, Stringable
     {
         $result = [];
 
-        for ($i = 0; $i < $this->count(); $i++) {
+        for ($i = 0; $i < $this->count(); ++$i) {
             $result[$this->name($i)] = $this->get($i);
         }
 
@@ -51,19 +47,18 @@ class Row implements JsonSerializable, Countable, Stringable
     }
 
     #[\Override]
-    public function jsonSerialize(): mixed {
+    public function jsonSerialize(): mixed
+    {
         return $this->toArray();
     }
 
     /**
      * Get amount of columns in this row.
-     *
-     * @return ?string
      */
     #[\Override]
     public function count(): int
     {
-        return getFFI()->libsql_row_length($this->inner);
+        return libsqlFFI()->libsql_row_length($this->inner);
     }
 
     #[\Override]
@@ -75,21 +70,15 @@ class Row implements JsonSerializable, Countable, Stringable
     /**
      * Get name of the column at the given index. If the index is out of
      * bounds, `null` will be returned.
-     *
-     * @param int $index
-     *
-     * @return ?string
      */
     public function name(int $index): ?string
     {
-        $ffi = getFFI();
+        $ffi = libsqlFFI();
         $nameSlice = $ffi->libsql_row_name($this->inner, $index);
-
-        if ($ffi::isNull($nameSlice->ptr)) {
+        if (null === $nameSlice) {
             return null;
         }
-
-        $name = $ffi::string($nameSlice->ptr, $nameSlice->len - 1);
+        $name = sliceToString($nameSlice);
         $ffi->libsql_slice_deinit($nameSlice);
 
         return $name;
@@ -97,32 +86,29 @@ class Row implements JsonSerializable, Countable, Stringable
 
     /**
      * Get value from row at the given index.
-     *
-     * @param int $index
-     *
-     * @return string|int|float|Blob|null
      */
     public function get(int $index): string|int|float|Blob|null
     {
-        $ffi = getFFI();
+        $ffi = libsqlFFI();
         $result = $ffi->libsql_row_value($this->inner, $index);
-        errIf($result->err);
+        errorIf($result->err);
 
         return match ($result->ok->type) {
-            $ffi->LIBSQL_TYPE_INTEGER => $result->ok->value->integer,
-            $ffi->LIBSQL_TYPE_REAL => $result->ok->value->real,
-            $ffi->LIBSQL_TYPE_TEXT => valueToString($result->ok),
-            $ffi->LIBSQL_TYPE_BLOB => new Blob(valueToString($result->ok)),
-            $ffi->LIBSQL_TYPE_NULL => null,
+            libsql::LIBSQL_TYPE_INTEGER => $result->ok->value->integer,
+            libsql::LIBSQL_TYPE_REAL => $result->ok->value->real,
+            libsql::LIBSQL_TYPE_TEXT => sliceToString($result->ok->value->text),
+            libsql::LIBSQL_TYPE_BLOB => new Blob(sliceToString($result->ok->value->blob)),
+            libsql::LIBSQL_TYPE_NULL => null,
+            default => throw new \InvalidArgumentException(),
         };
     }
 
     public function __get(string $name): string|int|float|Blob|null
     {
-        if (isset($this->column_names[$name])) {
-            return $this->get($this->column_names[$name]);
+        if (isset($this->columnNames[$name])) {
+            return $this->get($this->columnNames[$name]);
         } else {
-            throw new Exception("Missing column: $name");
+            throw new \Exception("Missing column: $name");
         }
     }
 }

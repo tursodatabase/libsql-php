@@ -10,6 +10,7 @@
     ],
     "autoload": {
         "classmap": [ "src/" ],
+        "files": [ "lib/libsql.php", "src/functions.php" ],
         "psr-4": {
           "Libsql\\": "src/",
           "Libsql\\Tests\\": "tests/"
@@ -21,7 +22,9 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^11",
-        "friendsofphp/php-cs-fixer": "^3.64"
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "ircmaxell/ffime": "dev-master",
+        "phpstan/phpstan": "2.0.x-dev"
     },
     "scripts": {
         "test": [ "@php vendor/bin/phpunit tests --fail-on-warning --fail-on-deprecation" ]

@@ -4,64 +4,55 @@ declare(strict_types=1);
 
 namespace Libsql;
 
-use FFI\CData;
+use ffi\libsql_connection_t;
 
 class Connection
 {
     use Prepareable;
 
     /** @internal */
-    public function __construct(protected CData $inner)
+    public function __construct(protected libsql_connection_t $inner)
     {
     }
 
     /**
      * @internal
+     *
      * @return void
      */
     public function __destruct()
     {
-        getFFI()->libsql_connection_deinit($this->inner);
+        libsqlFFI()->libsql_connection_deinit($this->inner);
     }
 
     /**
      * Execute batch statements.
-     *
-     * @param string $sql
-     *
-     * @return void
      */
     public function executeBatch(string $sql): void
     {
-        $batch = getFFI()->libsql_connection_batch($this->inner, $sql);
-        errIf($batch->err);
+        $batch = libsqlFFI()->libsql_connection_batch($this->inner, $sql);
+        errorIf($batch->err);
     }
 
     /**
      * Prepare statement with the given query.
-     *
-     * @param string $sql
-     *
-     * @return Statement
      */
     #[\Override]
     public function prepare(string $sql): Statement
     {
-        $stmt = getFFI()->libsql_connection_prepare($this->inner, $sql);
-        errIf($stmt->err);
+        $stmt = libsqlFFI()->libsql_connection_prepare($this->inner, $sql);
+        errorIf($stmt->err);
 
         return new Statement($stmt);
     }
 
     /**
      * Begin a transaction.
-     *
-     * @return Transaction
      */
     public function transaction(): Transaction
     {
-        $tx = getFFI()->libsql_connection_transaction($this->inner);
-        errIf($tx->err);
+        $tx = libsqlFFI()->libsql_connection_transaction($this->inner);
+        errorIf($tx->err);
 
         return new Transaction($tx);
     }

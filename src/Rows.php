@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace Libsql;
 
-use FFI\CData;
-use IteratorAggregate;
-use JsonSerializable;
-use Stringable;
-use Traversable;
+use ffi\libsql_rows_t;
 
 /**
- * @implements IteratorAggregate<int,Row>
+ * @implements \IteratorAggregate<int,Row>
  */
-class Rows implements IteratorAggregate, JsonSerializable, Stringable
+class Rows implements \IteratorAggregate, \JsonSerializable, \Stringable
 {
     /** @internal */
-    public function __construct(protected CData $inner)
+    public function __construct(protected libsql_rows_t $inner)
     {
     }
 
@@ -27,7 +23,7 @@ class Rows implements IteratorAggregate, JsonSerializable, Stringable
      */
     public function __destruct()
     {
-        getFFI()->libsql_rows_deinit($this->inner);
+        libsqlFFI()->libsql_rows_deinit($this->inner);
     }
 
     /**
@@ -49,10 +45,10 @@ class Rows implements IteratorAggregate, JsonSerializable, Stringable
     /**
      * Iterator over rows.
      *
-     * @return Traversable<Row>
+     * @return \Traversable<Row>
      */
     #[\Override]
-    public function getIterator(): Traversable
+    public function getIterator(): \Traversable
     {
         while (true) {
             $row = $this->next();
@@ -66,7 +62,8 @@ class Rows implements IteratorAggregate, JsonSerializable, Stringable
     }
 
     #[\Override]
-    public function jsonSerialize(): mixed {
+    public function jsonSerialize(): mixed
+    {
         return $this->fetchArray();
     }
 
@@ -78,14 +75,12 @@ class Rows implements IteratorAggregate, JsonSerializable, Stringable
 
     /**
      * Get the next row.
-     *
-     * @return ?Row
      */
     public function next(): ?Row
     {
-        $ffi = getFFI();
+        $ffi = libsqlFFI();
         $row = $ffi->libsql_rows_next($this->inner);
-        errIf($row->err);
+        errorIf($row->err);
 
         if ($ffi->libsql_row_empty($row)) {
             return null;
