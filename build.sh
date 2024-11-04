@@ -4,7 +4,9 @@ set -xe
 
 cd libsql-c
 
-./build.sh
+cargo zigbuild --target aarch64-unknown-linux-gnu --features encryption
+cargo zigbuild --target x86_64-unknown-linux-gnu --features encryption
+cargo zigbuild --target universal2-apple-darwin --features encryption
 
 rm -rf ../lib
 
