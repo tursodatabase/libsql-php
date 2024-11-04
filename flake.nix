@@ -23,6 +23,10 @@
         devShells.default =
           with pkgs;
           mkShell {
+            nativeBuildInputs = [
+              rustPlatform.bindgenHook
+            ];
+
             buildInputs = [
               php.packages.composer
               php
