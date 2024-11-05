@@ -1,0 +1,6 @@
+{
+    "php.problems.exclude": {
+        "vendor/": true,
+        "lib/": true,
+    },
+}

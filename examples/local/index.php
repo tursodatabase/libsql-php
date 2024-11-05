@@ -1,4 +1,5 @@
 <?php
+
 require __DIR__ . '/vendor/autoload.php';
 
 use Libsql\Database;
@@ -20,4 +21,3 @@ $conn->executeBatch($createUsers);
 foreach ($conn->query("select * from users", [1]) as $row) {
     echo "$row->id - $row->email\n";
 }
-

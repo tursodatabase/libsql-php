@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Libsql;
 
-use FFI\CData;
+use ffi\libsql_statement_t;
+use ffi\string_;
+use ffi\uint8_t_ptr;
 
 class Statement
 {
     /** @internal */
-    public function __construct(protected CData $inner)
+    public function __construct(protected libsql_statement_t $inner)
     {
     }
 
@@ -20,33 +22,27 @@ class Statement
      */
     public function __destruct()
     {
-        getFFI()->libsql_statement_deinit($this->inner);
+        libsqlFFI()->libsql_statement_deinit($this->inner);
     }
 
     /**
      * Execute statement.
-     *
-     * @return void
      */
     public function execute(): int
     {
-        $ffi = getFFI();
-        $exec = $ffi->libsql_statement_execute($this->inner);
-        errIf($exec->err);
+        $exec = libsqlFFI()->libsql_statement_execute($this->inner);
+        errorIf($exec->err);
 
         return $exec->rows_changed;
     }
 
     /**
      * Query statement.
-     *
-     * @return Rows
      */
     public function query(): Rows
     {
-        $ffi = getFFI();
-        $rows = $ffi->libsql_statement_query($this->inner);
-        errIf($rows->err);
+        $rows = libsqlFFI()->libsql_statement_query($this->inner);
+        errorIf($rows->err);
 
         return new Rows($rows);
     }
@@ -56,72 +52,40 @@ class Statement
      * not supported. This returns $this to allow chaining bind and query.
      *
      * @param array<int,mixed>|array<string,mixed> $params
-     *
-     * @return Statement
      */
     public function bind(array $params): Statement
     {
-        $ffi = getFFI();
-
+        $ffi = libsqlFFI();
+        $unsafes = [];
         foreach ($params as $key => $value) {
             if (is_null($value)) {
                 $value = $ffi->libsql_null();
-
-                $bind = match (gettype($key)) {
-                    'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                    'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
-                };
-
-                errIf($bind->err);
             } elseif (is_int($value)) {
                 $value = $ffi->libsql_integer($value);
-
-                $bind = match (gettype($key)) {
-                    'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                    'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
-                };
-                errIf($bind->err);
             } elseif (is_double($value)) {
                 $value = $ffi->libsql_real($value);
-
-                $bind = match (gettype($key)) {
-                    'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                    'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
-                };
-                errIf($bind->err);
             } elseif (is_string($value)) {
-                $cValue = new CharBox($value, $ffi);
-                $value = $ffi->libsql_text($cValue->ptr, $cValue->len);
-
-                $bind = match (gettype($key)) {
-                    'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                    'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
-                };
-
-                try {
-                    errIf($bind->err);
-                } finally {
-                    $cValue->destroy();
-                }
+                $unsafes[] = $text = string_::persistentZero($value);
+                $value = $ffi->libsql_text($text, \strlen($value) + 1);
             } elseif ($value instanceof Blob) {
-                $cValue = new CharBox($value->blob);
-                $value = $ffi->libsql_blob(
-                    $ffi->cast("uint8_t *", $ffi::addr($cValue->ptr)),
-                    $cValue->len - 1,
-                );
-
-                $bind = match (gettype($key)) {
-                    'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
-                    'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
-                };
-
-                try {
-                    errIf($bind->err);
-                } finally {
-                    $cValue->destroy();
+                $len = 0;
+                $blob = null;
+                if ($value->blob) {
+                    $len = \strlen($value->blob) + 1;
+                    $unsafes[] = $blob = uint8_t_ptr::persistentZero($value->blob);
                 }
+                $value = $ffi->libsql_blob($blob, $len);
             } else {
-                throw new InvalidArgumentException();
+                throw new \InvalidArgumentException();
+            }
+            $bind = match (gettype($key)) {
+                'string' => $ffi->libsql_statement_bind_named($this->inner, $key, $value),
+                'integer' => $ffi->libsql_statement_bind_value($this->inner, $value),
+            };
+            try {
+                errorIf($bind->err);
+            } finally {
+                freeUnsafe($unsafes);
             }
         }
 
