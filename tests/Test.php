@@ -36,6 +36,8 @@ final class Test extends TestCase
             [ "i" => 3 ],
         ]);
 
+        $this->assertSame($conn->lastInsertId(), 3);
+
     }
 
     public function testSelectAll(): void
@@ -148,5 +150,21 @@ final class Test extends TestCase
         $tx->rollback();
 
         $this->assertEquals($conn->query('select * from test_transaction')->next(), null);
+    }
+
+    public function testStatementColumnCount(): void
+    {
+        $db = new Database();
+        $conn = $db->connect();
+
+        $conn->execute('create table if not exists test(i integer)');
+
+        $conn->execute('insert into test values (?)', [1]);
+        $conn->execute('insert into test values (?)', [2]);
+        $conn->execute('insert into test values (?)', [3]);
+
+        $stmt = $conn->prepare('select * from test');
+        $this->assertEquals($stmt->columnCount(), 1);
+
     }
 }
