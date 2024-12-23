@@ -18,7 +18,7 @@ class Row implements JsonSerializable, Countable, Stringable
     public function __construct(protected CData $inner)
     {
         $names = [];
-        foreach (array_map(fn($i) => $this->name($i), range(0, count($this) - 1)) as $i => $name) {
+        foreach (array_map(fn ($i) => $this->name($i), range(0, count($this) - 1)) as $i => $name) {
             $names[$name] = $i;
         }
         $this->column_names = $names;
@@ -51,7 +51,8 @@ class Row implements JsonSerializable, Countable, Stringable
     }
 
     #[\Override]
-    public function jsonSerialize(): mixed {
+    public function jsonSerialize(): mixed
+    {
         return $this->toArray();
     }
 

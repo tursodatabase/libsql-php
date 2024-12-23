@@ -13,7 +13,8 @@ class Blob implements JsonSerializable
     {
     }
 
-    public function jsonSerialize(): mixed {
+    public function jsonSerialize(): mixed
+    {
         return base64_encode($this->blob);
     }
 

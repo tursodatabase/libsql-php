@@ -14,7 +14,7 @@ $conn->executeBatch("
 
 $tx = $conn->transaction();
 
-$fullnames=["John Doe", "Mary Smith", "Alice Jones", "Mark Taylor"];
+$fullnames = ["John Doe", "Mary Smith", "Alice Jones", "Mark Taylor"];
 
 foreach ($fullnames as $fullname) {
     $tx->execute(
@@ -33,4 +33,3 @@ $conn->executeBatch("
 foreach ($conn->query("select * from users", [1]) as $row) {
     echo "$row->id $row->name\n";
 }
-

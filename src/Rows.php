@@ -66,7 +66,8 @@ class Rows implements IteratorAggregate, JsonSerializable, Stringable
     }
 
     #[\Override]
-    public function jsonSerialize(): mixed {
+    public function jsonSerialize(): mixed
+    {
         return $this->fetchArray();
     }
 
