@@ -26,6 +26,16 @@ class Connection
 
     /**
      * Execute batch statements.
+     */
+    public function lastInsertId(): int
+    {
+        $info = getFFI()->libsql_connection_info($this->inner);
+        errIf($info->err);
+        return $info->last_inserted_rowid;
+    }
+
+    /**
+     * Execute batch statements.
      *
      * @param string $sql
      *
