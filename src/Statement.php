@@ -52,6 +52,19 @@ class Statement
     }
 
     /**
+     * Column count.
+     *
+     * @return int
+     */
+    public function columnCount(): int
+    {
+        $ffi = getFFI();
+        $count = $ffi->libsql_statement_column_count($this->inner);
+
+        return $count;
+    }
+
+    /**
      * Bind parameters to statement, mixing positional and named parameters is
      * not supported. This returns $this to allow chaining bind and query.
      *
@@ -121,7 +134,7 @@ class Statement
                     $cValue->destroy();
                 }
             } else {
-                throw new InvalidArgumentException();
+                throw new \InvalidArgumentException();
             }
         }
 
