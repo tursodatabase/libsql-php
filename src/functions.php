@@ -6,6 +6,10 @@ use Exception;
 use FFI;
 use FFI\CData;
 
+if (!extension_loaded('ffi')) {
+    die('FFI extension is not loaded');
+}
+
 /** @internal */
 function getFFI(): ?FFI
 {

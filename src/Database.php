@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Libsql;
 
-if (!extension_loaded('ffi')) {
-    die('FFI extension is not loaded');
-}
-
 use FFI\CData;
 
 class Database

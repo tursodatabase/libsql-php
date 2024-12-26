@@ -16,12 +16,12 @@ class PDO extends \PDO
         #[\SensitiveParameter] ?array $options = [],
     ) {
         $this->db = new Database(
-            url: $dsn,
+            url: $options["url"] ?? null,
             path: $dsn,
             authToken: $password,
-            webpki: $options["webpki"],
-            syncInterval: $options["syncInterval"],
-            readYourWrites: $options["readYourWrites"],
+            webpki: $options["webpki"] ?? false,
+            syncInterval: $options["syncInterval"] ?? 0,
+            readYourWrites: $options["readYourWrites"] ?? true,
         );
 
         $this->conn = $this->db->connect();
