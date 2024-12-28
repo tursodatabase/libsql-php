@@ -40,7 +40,7 @@ class PDOStatement extends \PDOStatement
             $mode = $this->mode;
         }
 
-        if (!$this->rows) {
+        if (is_null($this->rows)) {
             return false;
         }
 
@@ -67,12 +67,10 @@ class PDOStatement extends \PDOStatement
         $this->statement->bind($params ?? []);
 
         if ($this->columnCount() > 0) {
-            $this->affectedRows = $this->statement->execute();
-        } else {
             $this->rows = $this->statement->query()->fetchArray();
+        } else {
+            $this->affectedRows = $this->statement->execute();
         }
-
-        $this->statement->execute();
 
         return true;
     }
@@ -83,6 +81,11 @@ class PDOStatement extends \PDOStatement
     }
 
     public function getAffectedRows(): int
+    {
+        return $this->affectedRows;
+    }
+
+    public function rowCount(): int
     {
         return $this->affectedRows;
     }

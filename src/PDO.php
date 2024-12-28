@@ -25,6 +25,7 @@ class PDO extends \PDO
         );
 
         $this->conn = $this->db->connect();
+        $this->in_transaction = false;
     }
 
     public function inTransaction(): bool
@@ -71,7 +72,7 @@ class PDO extends \PDO
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
         return new PDOStatement(
-            ($this->inTransaction() ? $this->tx : $this->conn)->prepare()
+            ($this->inTransaction() ? $this->tx : $this->conn)->prepare($query)
         );
     }
 
@@ -102,5 +103,13 @@ class PDO extends \PDO
         }
 
         return "'".\SQLite3::escapeString($input)."'";
+    }
+
+    public function getAttribute(int $attribute): mixed
+    {
+        return match ($attribute) {
+            PDO::ATTR_DRIVER_NAME => "libsql",
+            PDO::ATTR_SERVER_VERSION => "1.0"
+        };
     }
 }
