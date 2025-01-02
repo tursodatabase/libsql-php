@@ -24,6 +24,7 @@ function getFFI(): ?FFI
             file_get_contents(__DIR__ . '/../lib/libsql.h'),
             __DIR__ . match ([$os, $arch]) {
                 ["Darwin", "arm64"] => '/../lib/aarch64-apple-darwin/liblibsql.dylib',
+                ["Darwin", "x86_64"] => '/../lib/x86_64-apple-darwin/liblibsql.dylib',
                 ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
                 ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
                 default => die("Unsupported OS $os $arch"),
