@@ -10,7 +10,7 @@ class PDO extends \PDO
     private Database $db;
 
     public function __construct(
-        string $dsn = null,
+        ?string $dsn = null,
         ?string $username = null,
         #[\SensitiveParameter] ?string $password = null,
         #[\SensitiveParameter] ?array $options = [],
