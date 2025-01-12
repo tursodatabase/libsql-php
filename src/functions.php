@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Libsql;
 
 use Exception;
@@ -27,7 +29,7 @@ function getFFI(): ?FFI
                 ["Darwin", "x86_64"] => '/../lib/x86_64-apple-darwin/liblibsql.dylib',
                 ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
                 ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
-                ["Windows NT", "AMD64"] => '/../lib/x86_64-pc-windows-gnu/liblibsql.dll',
+                ["Windows NT", "AMD64"] => '/../lib/x86_64-pc-windows-gnu/libsql.dll',
                 default => die("Unsupported OS $os $arch"),
             },
         );
