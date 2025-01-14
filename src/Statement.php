@@ -65,6 +65,17 @@ class Statement
     }
 
     /**
+     * Reset statement.
+     *
+     * @return void
+     */
+    public function reset(): void
+    {
+        $ffi = getFFI();
+        $ffi->libsql_statement_reset($this->inner);
+    }
+
+    /**
      * Bind parameters to statement, mixing positional and named parameters is
      * not supported. This returns $this to allow chaining bind and query.
      *

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Libsql;
 
 class PDO extends \PDO
@@ -24,8 +26,17 @@ class PDO extends \PDO
             readYourWrites: $options["readYourWrites"] ?? true,
         );
 
+        // Sync at least once to prevent issues.
+        if (!is_null($dsn) && isset($options["url"])) {
+            $this->db->sync();
+        }
+
         $this->conn = $this->db->connect();
         $this->in_transaction = false;
+    }
+
+    public function sync(): void {
+        $this->db->sync();
     }
 
     public function inTransaction(): bool
@@ -71,8 +82,12 @@ class PDO extends \PDO
 
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
+        $conn = $this->inTransaction() ? $this->tx : $this->conn;
+        $prepare = $conn->prepare($query);
         return new PDOStatement(
-            ($this->inTransaction() ? $this->tx : $this->conn)->prepare($query)
+            $prepare,
+            $query,
+            $conn,
         );
     }
 

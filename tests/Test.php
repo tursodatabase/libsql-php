@@ -167,4 +167,15 @@ final class Test extends TestCase
         $this->assertEquals($stmt->columnCount(), 1);
 
     }
+
+    public function testPDORemote(): void
+    {
+        $pdo = new \Libsql\PDO(password: getenv('TURSO_AUTH_TOKEN'), options: [
+            'url' => getenv('TURSO_URL'),
+        ]);
+
+        $statement = $pdo->prepare('select 1');
+        $statement->execute();
+        var_dump($statement->fetchAll());
+    }
 }

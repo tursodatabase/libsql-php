@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Libsql;
 
 class PDOStatement extends \PDOStatement
 {
+    private string $query;
     private ?array $rows = null;
     private ?int $affectedRows = null;
-    private ?int $mode = null;
+    private ?int $mode = PDO::FETCH_BOTH;
 
-    public function __construct(private Statement $statement)
+    public function __construct(private Statement $statement, string $query, private Connection $conn)
     {
+        $this->query = $query;
     }
 
     public function fetch(int $mode = PDO::FETCH_DEFAULT, ...$args): array
@@ -41,7 +45,7 @@ class PDOStatement extends \PDOStatement
         }
 
         if (is_null($this->rows)) {
-            return false;
+            return [];
         }
 
         $allRows = $this->rows;
@@ -58,19 +62,26 @@ class PDOStatement extends \PDOStatement
 
     public function bindValue(string|int $param, mixed $value, int $type = PDO::PARAM_STR): bool
     {
-        $this->statement->bind([$param => $value]);
+        $v = match ($type) {
+            PDO::PARAM_STR => strval($value),
+            PDO::PARAM_INT => intval($value),
+        };
+
+        $this->statement->bind([$param => $v]);
         return true;
     }
 
     public function execute(?array $params = null): bool
     {
         $this->statement->bind($params ?? []);
-
-        if ($this->columnCount() > 0) {
-            $this->rows = $this->statement->query()->fetchArray();
+        if ($this->columnCount() > 0 || preg_match('/^select/i', $this->query)) {
+            $query = $this->statement->query();
+            $this->rows = $query->fetchArray();
         } else {
             $this->affectedRows = $this->statement->execute();
         }
+
+        $this->statement->reset();
 
         return true;
     }
