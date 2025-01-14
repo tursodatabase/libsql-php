@@ -101,7 +101,7 @@ class PDO extends \PDO
         throw new \Exception('Not implemented');
     }
 
-    public function lastInsertId(?string $name = null): string|false
+    public function lastInsertId(?string $name = null): string|int|false
     {
         return $this->conn->lastInsertId();
     }
