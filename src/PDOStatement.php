@@ -16,7 +16,7 @@ class PDOStatement extends \PDOStatement
         $this->query = $query;
     }
 
-    public function fetch(int $mode = PDO::FETCH_DEFAULT, ...$args): array
+    public function fetch(int $mode = PDO::FETCH_DEFAULT, ...$args): mixed
     {
         if ($mode === PDO::FETCH_DEFAULT) {
             $mode = $this->mode;
@@ -55,7 +55,7 @@ class PDOStatement extends \PDOStatement
             PDO::FETCH_BOTH => array_merge($allRows, $rowValues),
             PDO::FETCH_ASSOC, PDO::FETCH_NAMED => $allRows,
             PDO::FETCH_NUM => $rowValues,
-            PDO::FETCH_OBJ => $allRows,
+            PDO::FETCH_OBJ => array_map(function ($row) { return (object) $row; }, $allRows),
             default => throw new \PDOException('Unsupported fetch mode.'),
         };
     }

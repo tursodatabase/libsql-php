@@ -174,8 +174,29 @@ final class Test extends TestCase
             'url' => getenv('TURSO_URL'),
         ]);
 
-        $statement = $pdo->prepare('select 1');
+        $statement = $pdo->prepare('select ?');
+        $statement->bindValue(1, "test");
         $statement->execute();
-        var_dump($statement->fetchAll());
+        $rows = $statement->fetchAll();
+
+        $this->assertEquals($rows[0]["?"], "test");
+    }
+
+    public function testPDORemoteFetchObj(): void
+    {
+        $pdo = new \Libsql\PDO(password: getenv('TURSO_AUTH_TOKEN'), options: [
+            'url' => getenv('TURSO_URL'),
+        ]);
+
+        $statement = $pdo->prepare('select * from test');
+        $statement->execute();
+        $statement->setFetchMode(\Libsql\PDO::FETCH_OBJ);
+        $rows = $statement->fetchAll();
+
+        foreach ($rows as $i => $row) {
+            $this->assertSame($row->i, $i);
+            $this->assertSame($row->r, exp($i / 10));
+            $this->assertSame($row->t, strval(exp($i / 10)));
+        }
     }
 }
