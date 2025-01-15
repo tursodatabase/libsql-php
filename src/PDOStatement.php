@@ -74,6 +74,7 @@ class PDOStatement extends \PDOStatement
     public function execute(?array $params = null): bool
     {
         $this->statement->bind($params ?? []);
+        // TODO: Fix columnCount for remote.
         if ($this->columnCount() > 0 || preg_match('/^select/i', $this->query)) {
             $query = $this->statement->query();
             $this->rows = $query->fetchArray();
