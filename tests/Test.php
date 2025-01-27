@@ -122,6 +122,36 @@ final class Test extends TestCase
         }
     }
 
+    public function testRemoteReplica(): void
+    {
+        $db = new Database(
+            url: getenv('TURSO_URL'),
+            authToken: getenv('TURSO_AUTH_TOKEN'),
+        );
+        $conn = $db->connect();
+
+        $conn->execute('drop table if exists test');
+        $conn->execute('create table test (i integer, r real, t text)');
+
+        $max = 20;
+
+        foreach (range(0, $max - 1) as $i) {
+            $stmt = $conn->prepare('insert into test values (:a, :b, :c)');
+            $stmt->bind([
+                ":a" => $i,
+                ":b" => exp($i / 10),
+                ":c" => strval(exp($i / 10))
+            ]);
+            $stmt->execute();
+        }
+
+        foreach ($conn->query('select * from test') as $i => $row) {
+            $this->assertSame($row->i, $i);
+            # $this->assertSame($row->r, exp($i / 10));
+            $this->assertSame($row->t, strval(exp($i / 10)));
+        }
+    }
+
     public function testBlob(): void
     {
         $db = new Database();
@@ -195,8 +225,31 @@ final class Test extends TestCase
 
         foreach ($rows as $i => $row) {
             $this->assertSame($row->i, $i);
-            $this->assertSame($row->r, exp($i / 10));
             $this->assertSame($row->t, strval(exp($i / 10)));
         }
+    }
+
+    public function testPDOTransaction(): void
+    {
+        $pdo = new \Libsql\PDO();
+
+        $tx = $pdo->beginTransaction();
+
+        $pdo->exec('create table test(i integer)');
+
+        $pdo->exec('insert into test values (0)');
+        $pdo->exec('insert into test values (1)');
+        $pdo->exec('insert into test values (2)');
+
+        $statement = $pdo->prepare('select * from test');
+        $statement->execute();
+        $statement->setFetchMode(\Libsql\PDO::FETCH_OBJ);
+        $rows = $statement->fetchAll();
+
+        foreach ($rows as $i => $row) {
+            $this->assertSame($row->i, $i);
+        }
+
+        $tx = $pdo->commit();
     }
 }

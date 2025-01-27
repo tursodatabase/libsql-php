@@ -11,7 +11,7 @@ class PDOStatement extends \PDOStatement
     private ?int $affectedRows = null;
     private ?int $mode = PDO::FETCH_BOTH;
 
-    public function __construct(private Statement $statement, string $query, private Connection $conn)
+    public function __construct(private Statement $statement, string $query)
     {
         $this->query = $query;
     }

@@ -32,6 +32,11 @@
               php
               turso-cli
             ] ++ lib.optionals stdenv.isDarwin [ iconv ];
+
+            shellHook = ''
+              export TURSO_URL=$(turso db show --url php-test)
+              export TURSO_AUTH_TOKEN=$(turso db tokens create -e 1d php-test)
+            '';
           };
       });
 }

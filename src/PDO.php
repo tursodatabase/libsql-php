@@ -87,7 +87,6 @@ class PDO extends \PDO
         return new PDOStatement(
             $prepare,
             $query,
-            $conn,
         );
     }
 
@@ -101,6 +100,7 @@ class PDO extends \PDO
         throw new \Exception('Not implemented');
     }
 
+    #[\ReturnTypeWillChange]
     public function lastInsertId(?string $name = null): string|int|false
     {
         return $this->conn->lastInsertId();
