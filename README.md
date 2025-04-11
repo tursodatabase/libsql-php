@@ -74,7 +74,7 @@ use Libsql\Database;
 $db = new Database(
     path: 'local.db',
     url: getenv('TURSO_DATABASE_URL'),
-    authToken: getenv('TURSO_AUTH_TOKEN')
+    authToken: getenv('TURSO_AUTH_TOKEN'),
     syncInterval: 1000
 );
 
