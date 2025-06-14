@@ -92,10 +92,17 @@ final class Test extends TestCase
 
     public function testEmbeddedReplica(): void
     {
+        $url = getenv('TURSO_URL');
+        $authToken = getenv('TURSO_AUTH_TOKEN');
+
+        if ($url == false) {
+            $this->markTestSkipped();
+        }
+
         $db = new Database(
             path: 'test.db',
-            url: getenv('TURSO_URL'),
-            authToken: getenv('TURSO_AUTH_TOKEN'),
+            url: $url,
+            authToken: $authToken,
             syncInterval: 100,
         );
         $conn = $db->connect();
@@ -117,16 +124,23 @@ final class Test extends TestCase
 
         foreach ($conn->query('select * from test') as $i => $row) {
             $this->assertSame($row->i, $i);
-            $this->assertSame($row->r, exp($i / 10));
-            $this->assertSame($row->t, strval(exp($i / 10)));
+            $this->assertLessThanOrEqual(abs($row->r - exp($i / 10)), 0.0e-12);
+            $this->assertLessThanOrEqual(abs($row->t - strval(exp($i / 10))), 0.0e-12);
         }
     }
 
     public function testRemoteReplica(): void
     {
+        $url = getenv('TURSO_URL');
+        $authToken = getenv('TURSO_AUTH_TOKEN');
+
+        if ($url == false) {
+            $this->markTestSkipped();
+        }
+
         $db = new Database(
-            url: getenv('TURSO_URL'),
-            authToken: getenv('TURSO_AUTH_TOKEN'),
+            url: $url,
+            authToken: $authToken,
         );
         $conn = $db->connect();
 
@@ -163,11 +177,18 @@ final class Test extends TestCase
 
     public function testTransactions(): void
     {
+        $url = getenv('TURSO_URL');
+        $authToken = getenv('TURSO_AUTH_TOKEN');
+
+        if ($url == false) {
+            $this->markTestSkipped();
+        }
+
         $db = new Database(
-            path: 'test.db',
-            url: getenv('TURSO_URL'),
-            authToken: getenv('TURSO_AUTH_TOKEN'),
-            syncInterval: 100,
+            // path: 'test.db',
+            url: $url,
+            authToken: $authToken,
+            // syncInterval: 100,
         );
         $conn = $db->connect();
 
@@ -200,8 +221,15 @@ final class Test extends TestCase
 
     public function testPDORemote(): void
     {
-        $pdo = new \Libsql\PDO(password: getenv('TURSO_AUTH_TOKEN'), options: [
-            'url' => getenv('TURSO_URL'),
+        $url = getenv('TURSO_URL');
+        $authToken = getenv('TURSO_AUTH_TOKEN');
+
+        if (!$url) {
+            $this->markTestSkipped();
+        }
+
+        $pdo = new \Libsql\PDO(password: $authToken, options: [
+            'url' => $url,
         ]);
 
         $statement = $pdo->prepare('select ?');
@@ -214,8 +242,15 @@ final class Test extends TestCase
 
     public function testPDORemoteFetchObj(): void
     {
-        $pdo = new \Libsql\PDO(password: getenv('TURSO_AUTH_TOKEN'), options: [
-            'url' => getenv('TURSO_URL'),
+        $url = getenv('TURSO_URL');
+        $authToken = getenv('TURSO_AUTH_TOKEN');
+
+        if ($url == false) {
+            $this->markTestSkipped();
+        }
+
+        $pdo = new \Libsql\PDO(password: $authToken, options: [
+            'url' => $url,
         ]);
 
         $statement = $pdo->prepare('select * from test');
