@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      libsql-server-release:
+        description: 'LibSQL Server Release'
+        required: false
+        default: 'libsql-server-v0.24.32'
+
+jobs:
+  test:
+    name: Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - name: Install sqld
+      run: |
+        curl --proto '=https' --tlsv1.2 -LsSf https://github.com/tursodatabase/libsql/releases/download/${{ github.event.inputs.libsql-server-release || 'libsql-server-v0.24.32' }}/libsql-server-installer.sh | sh
+        echo "$HOME/.sqld/bin" >> $GITHUB_PATH
+        sqld --version
+
+    - name: Start sqld server
+      run: |
+        sqld &
+        while ! curl -s http://localhost:8080/health > /dev/null; do
+          echo "Waiting for sqld..."
+          sleep 1
+        done
+        echo "sqld is ready!"
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        coverage: none
+
+    - name: Install Composer Dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Run Tests
+      env:
+        TURSO_URL: "http://localhost:8080"
+        TURSO_AUTH_TOKEN: ""
+      run: vendor/bin/phpunit tests/
