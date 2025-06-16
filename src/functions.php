@@ -30,7 +30,7 @@ function getFFI(): ?FFI
                 ["Linux", "x86_64"] => '/../lib/x86_64-unknown-linux-gnu/liblibsql.so',
                 ["Linux", "arm64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
                 ["Linux", "aarch64"] => '/../lib/aarch64-unknown-linux-gnu/liblibsql.so',
-                ["Windows NT", "AMD64"] => '/../lib/x86_64-pc-windows-gnu/libsql.dll',
+                ["Windows NT", "AMD64"] => '/../lib/x86_64-pc-windows-msvc/libsql.dll',
                 default => die("Unsupported OS $os $arch"),
             },
         );
